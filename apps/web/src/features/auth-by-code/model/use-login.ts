@@ -1,16 +1,22 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { meQuery, rememberedLogin, type AuthResult } from '@/entities/session'
+import { meQuery, rememberAccount, type AuthResult } from '@/entities/session'
 import { api, session } from '@/shared/api'
 
+/**
+ * Вход: одним 8-значным кодом или, для старых аккаунтов, логином и 6-значным
+ * кодом. После входа устройство помнит аккаунт — дальше сразу экран кода.
+ */
 export function useLogin() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (dto: { login: string; code: string }) =>
-      api.post<AuthResult>('/auth/login', dto),
+    mutationFn: ({ login, code }: { login?: string; code: string }) =>
+      login
+        ? api.post<AuthResult>('/auth/login', { login, code })
+        : api.post<AuthResult>('/auth/login/code', { code }),
     onSuccess: (res) => {
       queryClient.clear()
       session.set(res)
-      rememberedLogin.set(res.user.login)
+      rememberAccount(res.user)
       queryClient.setQueryData(meQuery().queryKey, res.user)
     },
   })

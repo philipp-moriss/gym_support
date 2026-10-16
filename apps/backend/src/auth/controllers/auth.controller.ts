@@ -8,11 +8,12 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { ThrottlerGuard } from '@nestjs/throttler';
+import { SkipThrottle, Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { CurrentUser, Public, type AuthUser } from '../../shared';
 import {
   ChangeCodeDto,
   CodeLoginDto,
+  CodeOnlyLoginDto,
   RefreshDto,
   RegisterDto,
 } from '../dto/auth.dto';
@@ -34,7 +35,23 @@ export class AuthController {
     return this.auth.register(dto.template, userAgent);
   }
 
-  /** Вход по логину и 6-значному коду. После 5 ошибок подряд — блокировка на 15 минут. */
+  /**
+   * Вход одним 8-значным кодом. Код ни к чему не привязан до проверки, поэтому
+   * подбор режется по IP: 5 попыток в минуту и общий дневной лимит.
+   */
+  @Public()
+  @UseGuards(ThrottlerGuard)
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  @Post('login/code')
+  @HttpCode(200)
+  loginByCode(
+    @Body() dto: CodeOnlyLoginDto,
+    @Headers('user-agent') userAgent?: string,
+  ) {
+    return this.auth.loginByCode(dto.code, userAgent);
+  }
+
+  /** Вход по логину и коду (старые аккаунты). После 5 ошибок подряд — блокировка на 15 минут. */
   @Public()
   @UseGuards(ThrottlerGuard)
   @Post('login')
@@ -46,6 +63,8 @@ export class AuthController {
   /** Обмен refresh-токена на новую пару. Старый refresh больше не работает. */
   @Public()
   @UseGuards(ThrottlerGuard)
+  // Обновление идёт каждые 15 минут у каждого устройства: дневной лимит входа к нему не относится.
+  @SkipThrottle({ daily: true })
   @Post('refresh')
   @HttpCode(200)
   refresh(@Body() dto: RefreshDto, @Headers('user-agent') userAgent?: string) {
@@ -73,6 +92,17 @@ export class AuthController {
     @Headers('user-agent') userAgent?: string,
   ) {
     return this.auth.changeCode(user, dto.currentCode, userAgent);
+  }
+
+  /** Старый 6-значный код → 8-значный, чтобы входить без логина. Один раз. */
+  @ApiBearerAuth()
+  @Post('code/upgrade')
+  @HttpCode(200)
+  upgradeCode(
+    @CurrentUser() user: AuthUser,
+    @Headers('user-agent') userAgent?: string,
+  ) {
+    return this.auth.upgradeCode(user, userAgent);
   }
 
   @ApiBearerAuth()

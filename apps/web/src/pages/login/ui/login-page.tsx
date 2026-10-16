@@ -1,7 +1,7 @@
 import { ArrowRight, Dumbbell, History } from 'lucide-react'
 import { useState } from 'react'
 import { Navigate, useLocation, useNavigate } from 'react-router'
-import { rememberedLogin } from '@/entities/session'
+import { knownDevice, rememberedLogin } from '@/entities/session'
 import { CodeLock, LoginForm } from '@/features/auth-by-code'
 import { readLegacy } from '@/features/import-legacy'
 import { RegisterFlow } from '@/features/register'
@@ -12,10 +12,15 @@ import { Button } from '@/shared/ui'
 type Step =
   | { kind: 'start' }
   | { kind: 'register' }
-  | { kind: 'login' }
-  | { kind: 'code'; login: string }
+  | { kind: 'code' }
+  | { kind: 'legacy-login' }
+  | { kind: 'legacy-code'; login: string }
 
-/** Вход: новый аккаунт, ввод логина или сразу экран кода, если логин уже запомнен. */
+/**
+ * Вход. Первый раз — «Создать аккаунт»: логин и код из 8 цифр придумываем сами.
+ * Дальше — только код. Устройство, где уже входили, сразу показывает экран кода.
+ * Старые аккаунты с 6-значным кодом входят по логину; после входа им выдаётся новый код.
+ */
 export function LoginPage() {
   const navigate = useNavigate()
   const location = useLocation()
@@ -23,7 +28,8 @@ export function LoginPage() {
     (location.state as { from?: string } | null)?.from ?? routes.today
   const [step, setStep] = useState<Step>(() => {
     const login = rememberedLogin.get()
-    return login ? { kind: 'code', login } : { kind: 'start' }
+    if (login) return { kind: 'legacy-code', login }
+    return knownDevice.get() ? { kind: 'code' } : { kind: 'start' }
   })
   const [hasLegacy] = useState(() => !!readLegacy())
   const enter = () => navigate(from, { replace: true })
@@ -31,6 +37,27 @@ export function LoginPage() {
   // Регистрация ставит сессию до экрана с кодом — уводим только с других шагов.
   if (session.hasSession() && step.kind !== 'register')
     return <Navigate to={from} replace />
+
+  const linkClass = 'text-stage-muted hover:text-bone-white'
+  const newAccount = (
+    <Button
+      variant="ghost"
+      size="sm"
+      onClick={() => setStep({ kind: 'register' })}
+    >
+      Создать аккаунт
+    </Button>
+  )
+  const legacyLink = (
+    <Button
+      variant="ghost"
+      size="sm"
+      className={linkClass}
+      onClick={() => setStep({ kind: 'legacy-login' })}
+    >
+      Старый вход: логин и 6 цифр
+    </Button>
+  )
 
   return (
     <main className="rise mx-auto flex min-h-dvh w-full max-w-md flex-col items-center justify-center px-4 py-10">
@@ -67,10 +94,10 @@ export function LoginPage() {
             </Button>
             <Button
               variant="highlight"
-              onClick={() => setStep({ kind: 'login' })}
+              onClick={() => setStep({ kind: 'code' })}
               className="h-14 text-lg"
             >
-              У меня есть аккаунт
+              Войти по коду
             </Button>
           </div>
         </div>
@@ -83,21 +110,43 @@ export function LoginPage() {
         />
       )}
 
-      {step.kind === 'login' && (
-        <LoginForm
-          onSubmit={(login) => setStep({ kind: 'code', login })}
-          onBack={() => setStep({ kind: 'start' })}
+      {step.kind === 'code' && (
+        <CodeLock
+          onSuccess={enter}
+          footer={
+            <>
+              {newAccount}
+              {legacyLink}
+            </>
+          }
         />
       )}
 
-      {step.kind === 'code' && (
+      {step.kind === 'legacy-login' && (
+        <LoginForm
+          onSubmit={(login) => setStep({ kind: 'legacy-code', login })}
+          onBack={() =>
+            setStep(knownDevice.get() ? { kind: 'code' } : { kind: 'start' })
+          }
+        />
+      )}
+
+      {step.kind === 'legacy-code' && (
         <CodeLock
           login={step.login}
           onSuccess={enter}
-          onSwitchAccount={() => {
-            rememberedLogin.clear()
-            setStep({ kind: 'start' })
-          }}
+          footer={
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                rememberedLogin.clear()
+                setStep({ kind: 'code' })
+              }}
+            >
+              У меня код из 8 цифр
+            </Button>
+          }
         />
       )}
     </main>

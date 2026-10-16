@@ -32,8 +32,15 @@ import { AuthController } from './controllers/auth.controller';
       inject: [ConfigService],
       useFactory: (config: ConfigService) => [
         {
+          name: 'default',
           ttl: 60_000,
           limit: Number(config.get('AUTH_RATE_LIMIT_PER_MINUTE', 10)),
+        },
+        // Вход одним кодом можно подбирать по всем аккаунтам сразу — дневной потолок на IP.
+        {
+          name: 'daily',
+          ttl: 24 * 60 * 60_000,
+          limit: Number(config.get('AUTH_RATE_LIMIT_PER_DAY', 100)),
         },
       ],
     }),

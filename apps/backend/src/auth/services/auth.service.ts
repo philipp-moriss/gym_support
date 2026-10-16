@@ -1,4 +1,5 @@
 import {
+  ConflictException,
   ForbiddenException,
   HttpException,
   HttpStatus,
@@ -25,9 +26,10 @@ export interface AccessTokenPayload {
   ver: number;
 }
 
-export const toMe = ({ id, login, createdAt }: AccountRecord) => ({
+export const toMe = ({ id, login, codeDigits, createdAt }: AccountRecord) => ({
   id,
   login,
+  codeDigits,
   createdAt,
 });
 
@@ -63,6 +65,14 @@ export class AuthService {
     throw new UnauthorizedException('Invalid login or code');
   }
 
+  /** Вход одним 8-значным кодом, без логина. */
+  async loginByCode(code: string, userAgent?: string) {
+    const check = await this.accounts.findByCode(code);
+    if (check.ok) return this.issue(check.account, userAgent);
+    if (check.reason === 'locked') throw tooManyAttempts(check.retryAfterSec);
+    throw new UnauthorizedException('Invalid code');
+  }
+
   /**
    * Смена кода вошедшим пользователем. Неверный текущий код — 403, а не 401:
    * токен при этом в порядке, клиенту не нужно его обновлять и повторять запрос.
@@ -78,6 +88,16 @@ export class AuthService {
     }
     if (change.reason === 'locked') throw tooManyAttempts(change.retryAfterSec);
     throw new ForbiddenException('Invalid code');
+  }
+
+  /** Старый аккаунт переходит на вход одним кодом: новый код и новая пара токенов. */
+  async upgradeCode(current: AuthUser, userAgent?: string) {
+    const upgraded = await this.accounts.upgradeCode(current.id);
+    if (!upgraded) throw new ConflictException('Code is already 8 digits');
+    return {
+      ...(await this.issue(upgraded.account, userAgent)),
+      code: upgraded.code,
+    };
   }
 
   async refresh(refreshToken: string, userAgent?: string) {

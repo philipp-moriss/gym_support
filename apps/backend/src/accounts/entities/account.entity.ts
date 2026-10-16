@@ -12,6 +12,11 @@ export class Account extends BaseEntity {
   @Column({ type: 'varchar', length: 200 })
   codeHash: string;
 
+  /** HMAC кода для входа без логина; null — старый 6-значный код, вход только с логином. */
+  @Index({ unique: true })
+  @Column({ type: 'varchar', length: 64, nullable: true })
+  codeLookup: string | null;
+
   /** Неверные попытки подряд; сбрасывается при входе и блокировке. */
   @Column({ type: 'int', default: 0 })
   failedAttempts: number;

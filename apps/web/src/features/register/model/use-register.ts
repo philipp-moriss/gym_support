@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { meQuery, rememberedLogin, type AuthResult } from '@/entities/session'
+import { meQuery, rememberAccount, type AuthResult } from '@/entities/session'
 import { api, session } from '@/shared/api'
 
 export type ProgramTemplate = 'back' | 'empty'
@@ -13,7 +13,7 @@ export function useRegister() {
     onSuccess: (res) => {
       queryClient.clear()
       session.set(res)
-      rememberedLogin.set(res.user.login)
+      rememberAccount(res.user)
       queryClient.setQueryData(meQuery().queryKey, res.user)
     },
   })

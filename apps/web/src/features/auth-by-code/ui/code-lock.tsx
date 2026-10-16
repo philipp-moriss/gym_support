@@ -1,22 +1,25 @@
 import { LockKeyhole } from 'lucide-react'
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { ApiError } from '@/shared/api'
 import { plural } from '@/shared/lib'
-import { Button, PinPad } from '@/shared/ui'
+import { PinPad } from '@/shared/ui'
 import { useLogin } from '../model/use-login'
 
-const CODE_LENGTH = 6
-
-/** Экран кода как на iPhone: 6 точек, круглые кнопки, тряска при ошибке. */
+/**
+ * Экран кода как на iPhone: точки, круглые кнопки, тряска при ошибке.
+ * Без логина — 8-значный код; с логином — старый 6-значный.
+ */
 export function CodeLock({
   login,
-  onSwitchAccount,
+  footer,
   onSuccess,
 }: {
-  login: string
-  onSwitchAccount: () => void
+  login?: string
+  /** Ссылки под клавиатурой: «Создать аккаунт», «Старый вход по логину». */
+  footer?: ReactNode
   onSuccess: () => void
 }) {
+  const codeLength = login ? 6 : 8
   const [code, setCode] = useState('')
   const [shake, setShake] = useState(0)
   const [message, setMessage] = useState<string | null>(null)
@@ -53,7 +56,9 @@ export function CodeLock({
           <LockKeyhole className="size-7" />
         </span>
         <h1 className="display text-4xl text-accent">Введи код</h1>
-        <p className="font-mono text-sm text-stage-muted">{login}</p>
+        <p className="font-mono text-sm text-stage-muted">
+          {login ?? `${codeLength} цифр, которые выдали при регистрации`}
+        </p>
       </div>
 
       <PinPad
@@ -61,9 +66,9 @@ export function CodeLock({
         onChange={(v) => {
           setMessage(null)
           setCode(v)
-          if (v.length === CODE_LENGTH) submit(v)
+          if (v.length === codeLength) submit(v)
         }}
-        length={CODE_LENGTH}
+        length={codeLength}
         shakeKey={shake}
         disabled={isPending}
       />
@@ -72,9 +77,9 @@ export function CodeLock({
         {message}
       </p>
 
-      <Button variant="ghost" size="sm" onClick={onSwitchAccount}>
-        Другой аккаунт
-      </Button>
+      {footer && (
+        <div className="flex flex-wrap justify-center gap-2">{footer}</div>
+      )}
     </div>
   )
 }

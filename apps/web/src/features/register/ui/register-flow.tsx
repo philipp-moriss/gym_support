@@ -45,8 +45,9 @@ export function RegisterFlow({
           <span className="mono-label text-stage-muted">Аккаунт создан</span>
           <h1 className="display text-5xl text-accent">Запиши это</h1>
           <p className="text-[15px] text-stage-muted">
-            Код больше нигде не покажем и не восстановим. Сохрани его в заметках
-            или сделай скриншот.
+            Входить будешь только по этому коду из 8 цифр. Больше мы его нигде
+            не покажем и не восстановим — сохрани в заметках или сделай
+            скриншот.
           </p>
         </div>
         <CredentialsCard login={user.login} code={code} />
@@ -57,7 +58,7 @@ export function RegisterFlow({
             checked={saved}
             onChange={(e) => setSaved(e.target.checked)}
           />
-          Я сохранил логин и код
+          Я сохранил код
         </label>
         <Button disabled={!saved} onClick={onDone} className="self-start">
           Начать тренироваться
@@ -72,7 +73,8 @@ export function RegisterFlow({
         <span className="mono-label text-stage-muted">Новый аккаунт</span>
         <h1 className="display text-5xl text-accent">С чего начнём?</h1>
         <p className="text-[15px] text-stage-muted">
-          Логин и 6-значный код придумаем сами — без почты и паролей.
+          Придумаем логин и код из 8 цифр — без почты и паролей. Дальше входишь
+          одним кодом.
         </p>
       </div>
       <div className="flex flex-col gap-2">

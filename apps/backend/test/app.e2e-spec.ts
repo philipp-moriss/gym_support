@@ -2,6 +2,7 @@ import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import type { App } from 'supertest/types';
+import { DataSource } from 'typeorm';
 import { AppModule } from '../src/app.module';
 
 /** Полный сценарий на настоящей базе (docker compose ... up -d postgres). */
@@ -26,7 +27,7 @@ describe('journal flow (e2e)', () => {
     const http = request(app.getHttpServer());
     const reg = await http.post('/api/auth/register').send({}).expect(201);
     const { code, user, accessToken, refreshToken } = reg.body;
-    expect(code).toMatch(/^\d{6}$/);
+    expect(code).toMatch(/^\d{8}$/);
     const auth = { Authorization: `Bearer ${accessToken}` };
 
     const program = await http.get('/api/program').set(auth).expect(200);
@@ -58,7 +59,7 @@ describe('journal flow (e2e)', () => {
       .post('/api/auth/login')
       .send({
         login: user.login,
-        code: code === '000000' ? '111111' : '000000',
+        code: code === '00000000' ? '11111111' : '00000000',
       })
       .expect(401);
     const login = await http
@@ -80,7 +81,7 @@ describe('journal flow (e2e)', () => {
       await http.post('/api/auth/register').send({ template: 'empty' })
     ).body;
     const auth = { Authorization: `Bearer ${reg.accessToken}` };
-    const wrong = reg.code === '000000' ? '111111' : '000000';
+    const wrong = reg.code === '00000000' ? '11111111' : '00000000';
 
     await http
       .post('/api/auth/code')
@@ -105,7 +106,7 @@ describe('journal flow (e2e)', () => {
       .send({ currentCode: reg.code })
       .expect(200);
     const { code, accessToken, refreshToken, user } = changed.body;
-    expect(code).toMatch(/^\d{6}$/);
+    expect(code).toMatch(/^\d{8}$/);
     expect(user.login).toBe(reg.user.login);
 
     await http.get('/api/auth/me').set(auth).expect(401);
@@ -197,5 +198,55 @@ describe('journal flow (e2e)', () => {
       days: [0, 3],
     });
     expect(created.body.id).toMatch(/^c-/);
+  });
+
+  it('вход одним кодом; старый 6-значный аккаунт переводится на 8 цифр', async () => {
+    const http = request(app.getHttpServer());
+    const reg = (
+      await http.post('/api/auth/register').send({ template: 'empty' })
+    ).body;
+    const ok = await http
+      .post('/api/auth/login/code')
+      .send({ code: reg.code })
+      .expect(200);
+    expect(ok.body.user).toMatchObject({
+      login: reg.user.login,
+      codeDigits: 8,
+    });
+    await http
+      .post('/api/auth/login/code')
+      .send({ code: reg.code.slice(0, 6) })
+      .expect(400);
+
+    // Старый аккаунт: убираем ключ поиска, как у аккаунтов до этой версии.
+    const ds = app.get(DataSource);
+    await ds.query(`UPDATE accounts SET "codeLookup" = NULL WHERE id = $1`, [
+      reg.user.id,
+    ]);
+    const relogin = await http
+      .post('/api/auth/login')
+      .send({ login: reg.user.login, code: reg.code })
+      .expect(200);
+    expect(relogin.body.user.codeDigits).toBe(6);
+    await http
+      .post('/api/auth/login/code')
+      .send({ code: reg.code })
+      .expect(401);
+
+    const auth = { Authorization: `Bearer ${relogin.body.accessToken}` };
+    const upgraded = await http
+      .post('/api/auth/code/upgrade')
+      .set(auth)
+      .expect(200);
+    expect(upgraded.body.code).toMatch(/^\d{8}$/);
+    expect(upgraded.body.user.codeDigits).toBe(8);
+    await http
+      .post('/api/auth/code/upgrade')
+      .set({ Authorization: `Bearer ${upgraded.body.accessToken}` })
+      .expect(409);
+    await http
+      .post('/api/auth/login/code')
+      .send({ code: upgraded.body.code })
+      .expect(200);
   });
 });

@@ -2,6 +2,8 @@
 export interface Me {
   id: string
   login: string
+  /** 8 — вход одним кодом, 6 — старый код (нужен логин, приложение предложит новый). */
+  codeDigits: 6 | 8
   createdAt: string
 }
 

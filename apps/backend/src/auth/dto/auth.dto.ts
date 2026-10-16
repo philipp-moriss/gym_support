@@ -15,8 +15,15 @@ export class CodeLoginDto {
   @Length(1, 40)
   login: string;
 
-  @ApiProperty({ example: '042917' })
-  @Matches(/^\d{6}$/)
+  /** 6 цифр у старых аккаунтов, 8 — у новых. */
+  @ApiProperty({ example: '04291735' })
+  @Matches(/^(\d{6}|\d{8})$/)
+  code: string;
+}
+
+export class CodeOnlyLoginDto {
+  @ApiProperty({ example: '04291735' })
+  @Matches(/^\d{8}$/)
   code: string;
 }
 
@@ -28,7 +35,7 @@ export class RefreshDto {
 }
 
 export class ChangeCodeDto {
-  @ApiProperty({ example: '042917' })
-  @Matches(/^\d{6}$/)
+  @ApiProperty({ example: '04291735' })
+  @Matches(/^(\d{6}|\d{8})$/)
   currentCode: string;
 }

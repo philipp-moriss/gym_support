@@ -1,4 +1,5 @@
 import {
+  createHmac,
   randomBytes,
   randomInt,
   scrypt as scryptCb,
@@ -12,9 +13,21 @@ const scrypt = (password: string, salt: Buffer, keylen: number) =>
     ),
   );
 
-/** 6 случайных цифр, ведущие нули допустимы. */
-export const generateCode = () =>
-  randomInt(0, 1_000_000).toString().padStart(6, '0');
+/** Длина кода новых аккаунтов. У аккаунтов до входа без логина — 6 цифр. */
+export const CODE_DIGITS = 8;
+
+/** Случайные цифры, ведущие нули допустимы. */
+export const generateCode = (digits = CODE_DIGITS) =>
+  randomInt(0, 10 ** digits)
+    .toString()
+    .padStart(digits, '0');
+
+/**
+ * Ключ поиска для входа по одному коду: HMAC с секретом сервера. По нему
+ * находим аккаунт, но код из него не восстановить. Уникален среди аккаунтов.
+ */
+export const codeLookup = (code: string, pepper: string) =>
+  createHmac('sha256', pepper).update(code).digest('hex');
 
 /**
  * Хеш кода: scrypt с солью и секретом сервера (pepper). Без секрета из базы

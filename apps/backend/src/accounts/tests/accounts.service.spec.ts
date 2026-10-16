@@ -11,12 +11,27 @@ import {
 /** Репозиторий в памяти: одна запись, атомарные UPDATE через query. */
 function fakeRepo(account: Account) {
   return {
-    findOneBy: jest.fn(({ login, id }: { login?: string; id?: string }) =>
-      Promise.resolve(
-        (login ? login === account.login : id === account.id)
-          ? { ...account }
-          : null,
-      ),
+    findOneBy: jest.fn(
+      ({
+        login,
+        id,
+        codeLookup,
+      }: {
+        login?: string;
+        id?: string;
+        codeLookup?: string;
+      }) =>
+        Promise.resolve(
+          (
+            login
+              ? login === account.login
+              : codeLookup
+                ? codeLookup === account.codeLookup
+                : id === account.id
+          )
+            ? { ...account }
+            : null,
+        ),
     ),
     update: jest.fn((_id: string, patch: Partial<Account>) => {
       Object.assign(account, patch);
@@ -26,6 +41,7 @@ function fakeRepo(account: Account) {
       if (sql.includes('"codeHash" = $2')) {
         Object.assign(account, {
           codeHash: params[1] as string,
+          codeLookup: params[2] as string,
           sessionsVersion: account.sessionsVersion + 1,
           failedAttempts: 0,
           lockedUntil: null,
@@ -45,6 +61,7 @@ const makeAccount = async (): Promise<Account> => ({
   id: 'a1',
   login: 'otter-4821',
   codeHash: await hashCode('123456', 'pepper'),
+  codeLookup: null,
   failedAttempts: 0,
   lockedUntil: null,
   sessionsVersion: 0,
@@ -114,7 +131,8 @@ describe('AccountsService.changeCode', () => {
   it('issues a new code, stores only its hash and bumps sessionsVersion', async () => {
     const res = await service.changeCode('a1', '123456');
     if (!res.ok) throw new Error('expected ok');
-    expect(res.code).toMatch(/^\d{6}$/);
+    expect(res.code).toMatch(/^\d{8}$/);
+    expect(res.account.codeDigits).toBe(8);
     expect(res.account).toMatchObject({ id: 'a1', sessionsVersion: 1 });
     expect(account.codeHash).not.toContain(res.code);
     await expect(
@@ -160,5 +178,38 @@ describe('AccountsService.changeCode', () => {
       ok: false,
       reason: 'invalid',
     });
+  });
+});
+
+describe('AccountsService: вход одним кодом', () => {
+  const config = new ConfigService({ CODE_PEPPER: 'pepper' });
+  let account: Account;
+  let service: AccountsService;
+
+  beforeEach(async () => {
+    account = await makeAccount();
+    service = new AccountsService(fakeRepo(account), config);
+  });
+
+  it('старый 6-значный аккаунт без логина не находится, после перевода — находится', async () => {
+    await expect(service.findByCode('12345600')).resolves.toEqual({
+      ok: false,
+      reason: 'invalid',
+    });
+    const upgraded = await service.upgradeCode('a1');
+    if (!upgraded) throw new Error('expected upgrade');
+    expect(upgraded.code).toMatch(/^\d{8}$/);
+    expect(upgraded.account).toMatchObject({
+      codeDigits: 8,
+      sessionsVersion: 1,
+    });
+    expect(account.codeLookup).toMatch(/^[0-9a-f]{64}$/);
+    expect(account.codeLookup).not.toContain(upgraded.code);
+    await expect(service.findByCode(upgraded.code)).resolves.toMatchObject({
+      ok: true,
+      account: { id: 'a1' },
+    });
+    // Повторно не переводится: код уже 8-значный.
+    await expect(service.upgradeCode('a1')).resolves.toBeNull();
   });
 });

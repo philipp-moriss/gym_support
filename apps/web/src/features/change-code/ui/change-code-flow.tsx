@@ -1,13 +1,11 @@
 import { KeyRound } from 'lucide-react'
 import { useState } from 'react'
 import { createPortal } from 'react-dom'
-import { CredentialsCard } from '@/entities/session'
+import { CredentialsCard, useMe } from '@/entities/session'
 import { ApiError } from '@/shared/api'
 import { plural } from '@/shared/lib'
 import { Button, PinPad } from '@/shared/ui'
 import { useChangeCode } from '../model/use-change-code'
-
-const CODE_LENGTH = 6
 
 /**
  * Полноэкранно поверх приложения: текущий код на PinPad → новый код (один раз).
@@ -19,6 +17,8 @@ export function ChangeCodeFlow({ onClose }: { onClose: () => void }) {
   const [message, setMessage] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
   const change = useChangeCode()
+  // Текущий код: 6 цифр у старых аккаунтов, 8 — у новых.
+  const codeLength = useMe().data?.codeDigits ?? 8
 
   function submit(value: string) {
     change.mutate(value, {
@@ -56,7 +56,8 @@ export function ChangeCodeFlow({ onClose }: { onClose: () => void }) {
               <h1 className="display text-5xl text-accent">Новый код</h1>
               <p className="text-[15px] text-stage-muted">
                 Старый код больше не подходит, на других устройствах нужно войти
-                заново. Новый код больше нигде не покажем — сохрани его.
+                заново — одним этим кодом. Больше мы его нигде не покажем,
+                сохрани его.
               </p>
             </div>
             <CredentialsCard
@@ -93,9 +94,9 @@ export function ChangeCodeFlow({ onClose }: { onClose: () => void }) {
               onChange={(v) => {
                 setMessage(null)
                 setCode(v)
-                if (v.length === CODE_LENGTH) submit(v)
+                if (v.length === codeLength) submit(v)
               }}
-              length={CODE_LENGTH}
+              length={codeLength}
               shakeKey={shake}
               disabled={change.isPending}
             />

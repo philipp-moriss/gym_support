@@ -8,7 +8,8 @@ import {
 describe('access code', () => {
   it('generates 6 digits and readable logins', () => {
     for (let i = 0; i < 50; i++) {
-      expect(generateCode()).toMatch(/^\d{6}$/);
+      expect(generateCode()).toMatch(/^\d{8}$/);
+      expect(generateCode(6)).toMatch(/^\d{6}$/);
       expect(generateLogin()).toMatch(/^[a-z]+-\d{4}$/);
     }
   });

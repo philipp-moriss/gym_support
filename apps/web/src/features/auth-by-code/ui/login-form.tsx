@@ -24,7 +24,8 @@ export function LoginForm({
         <span className="mono-label text-stage-muted">Вход</span>
         <h1 className="display text-5xl text-accent">Твой логин</h1>
         <p className="text-[15px] text-stage-muted">
-          Его показали при регистрации, например «otter-4821».
+          Для аккаунтов со старым 6-значным кодом. После входа выдадим код из 8
+          цифр — и логин больше не понадобится.
         </p>
       </div>
       <Input

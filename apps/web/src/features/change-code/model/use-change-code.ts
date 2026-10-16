@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { meQuery, type AuthResult } from '@/entities/session'
+import { meQuery, rememberAccount, type AuthResult } from '@/entities/session'
 import { api, session } from '@/shared/api'
 
 /**
@@ -13,6 +13,7 @@ export function useChangeCode() {
       api.post<AuthResult & { code: string }>('/auth/code', { currentCode }),
     onSuccess: (res) => {
       session.set(res)
+      rememberAccount(res.user)
       queryClient.setQueryData(meQuery().queryKey, res.user)
     },
   })

@@ -1,5 +1,6 @@
 import { CalendarCheck, ClipboardList, NotebookPen, Trophy } from 'lucide-react'
 import { NavLink, Outlet, useLocation } from 'react-router'
+import { UpgradeCodeGate } from '@/features/upgrade-code'
 import { routes } from '@/shared/config'
 import { cn } from '@/shared/lib'
 
@@ -51,6 +52,8 @@ export function AppShell() {
           ))}
         </div>
       </nav>
+
+      <UpgradeCodeGate />
     </>
   )
 }

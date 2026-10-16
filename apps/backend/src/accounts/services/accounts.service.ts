@@ -10,6 +10,7 @@ import type {
 } from '../../shared';
 import { Account } from '../entities/account.entity';
 import {
+  codeLookup,
   generateCode,
   generateLogin,
   hashCode,
@@ -24,11 +25,13 @@ const toRecord = ({
   id,
   login,
   sessionsVersion,
+  codeLookup,
   createdAt,
 }: Account): AccountRecord => ({
   id,
   login,
   sessionsVersion,
+  codeDigits: codeLookup ? 8 : 6,
   createdAt,
 });
 
@@ -48,19 +51,46 @@ export class AccountsService implements Accounts {
   }
 
   async create() {
-    const code = generateCode();
-    const codeHash = await hashCode(code, this.pepper);
-    // Логин случайный: при редком совпадении пробуем ещё раз.
+    // Логин и код случайные и уникальные: при редком совпадении пробуем ещё раз.
     for (let attempt = 0; ; attempt++) {
+      const { code, codeHash, codeLookup } = await this.newCode();
       try {
         const account = await this.accounts.save(
-          this.accounts.create({ login: generateLogin(), codeHash }),
+          this.accounts.create({
+            login: generateLogin(),
+            codeHash,
+            codeLookup,
+          }),
         );
         return { account: toRecord(account), code };
       } catch (e) {
         if (!isUniqueViolation(e) || attempt >= 9) throw e;
       }
     }
+  }
+
+  async findByCode(code: string): Promise<CodeCheck> {
+    const account = await this.accounts.findOneBy({
+      codeLookup: codeLookup(code, this.pepper),
+    });
+    if (!account) return { ok: false, reason: 'invalid' };
+    if (account.lockedUntil && account.lockedUntil.getTime() > Date.now()) {
+      return {
+        ok: false,
+        reason: 'locked',
+        retryAfterSec: secondsUntil(account.lockedUntil),
+      };
+    }
+    return { ok: true, account: toRecord(account) };
+  }
+
+  private async newCode() {
+    const code = generateCode();
+    return {
+      code,
+      codeHash: await hashCode(code, this.pepper),
+      codeLookup: codeLookup(code, this.pepper),
+    };
   }
 
   async verifyCode(login: string, code: string): Promise<CodeCheck> {
@@ -76,18 +106,41 @@ export class AccountsService implements Accounts {
     if (!account) return { ok: false, reason: 'invalid' };
     const check = await this.check(account, currentCode);
     if (!check.ok) return check;
+    return { ok: true, ...(await this.replaceCode(account)) };
+  }
 
-    const code = generateCode();
-    const codeHash = await hashCode(code, this.pepper);
-    // Версия растёт атомарно: параллельные смены не выдадут одинаковую версию.
-    const rows: unknown = await this.accounts.query(
-      `UPDATE accounts SET "codeHash" = $2, "sessionsVersion" = "sessionsVersion" + 1, "failedAttempts" = 0, "lockedUntil" = NULL, "updatedAt" = now() WHERE id = $1 RETURNING "sessionsVersion"`,
-      [account.id, codeHash],
-    );
-    const sessionsVersion = (
-      rows as [[{ sessionsVersion: number }], number]
-    )[0][0].sessionsVersion;
-    return { ok: true, account: { ...check.account, sessionsVersion }, code };
+  async upgradeCode(id: string) {
+    const account = await this.accounts.findOneBy({ id });
+    if (!account || account.codeLookup) return null;
+    return this.replaceCode(account);
+  }
+
+  /** Новый 8-значный уникальный код; все выданные токены перестают работать. */
+  private async replaceCode(account: Account) {
+    // Новый код всегда 8-значный и уникальный: после смены можно входить без логина.
+    for (let attempt = 0; ; attempt++) {
+      const { code, codeHash, codeLookup } = await this.newCode();
+      try {
+        // Версия растёт атомарно: параллельные смены не выдадут одинаковую версию.
+        const rows: unknown = await this.accounts.query(
+          `UPDATE accounts SET "codeHash" = $2, "codeLookup" = $3, "sessionsVersion" = "sessionsVersion" + 1, "failedAttempts" = 0, "lockedUntil" = NULL, "updatedAt" = now() WHERE id = $1 RETURNING "sessionsVersion"`,
+          [account.id, codeHash, codeLookup],
+        );
+        const sessionsVersion = (
+          rows as [[{ sessionsVersion: number }], number]
+        )[0][0].sessionsVersion;
+        return {
+          account: {
+            ...toRecord(account),
+            sessionsVersion,
+            codeDigits: 8 as const,
+          },
+          code,
+        };
+      } catch (e) {
+        if (!isUniqueViolation(e) || attempt >= 9) throw e;
+      }
+    }
   }
 
   /** Проверка кода с лимитом попыток: общий счётчик для входа и смены кода. */

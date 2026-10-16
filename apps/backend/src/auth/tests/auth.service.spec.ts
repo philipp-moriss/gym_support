@@ -9,6 +9,7 @@ describe('AuthService.changeCode', () => {
     id: 'a1',
     login: 'otter-4821',
     sessionsVersion: 3,
+    codeDigits: 8,
     createdAt: new Date(),
   };
   const user = { id: 'a1', login: 'otter-4821' };
@@ -38,7 +39,12 @@ describe('AuthService.changeCode', () => {
     await expect(service.changeCode(user, '123456', 'ua')).resolves.toEqual({
       accessToken: 'access-new',
       refreshToken: 'refresh-new',
-      user: { id: 'a1', login: 'otter-4821', createdAt: account.createdAt },
+      user: {
+        id: 'a1',
+        login: 'otter-4821',
+        codeDigits: 8,
+        createdAt: account.createdAt,
+      },
       code: '654321',
     });
     expect(accounts.changeCode).toHaveBeenCalledWith('a1', '123456');
