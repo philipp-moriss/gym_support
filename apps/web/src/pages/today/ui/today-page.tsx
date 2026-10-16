@@ -4,6 +4,7 @@ import { useProgram } from '@/entities/program'
 import { useMe } from '@/entities/session'
 import { ImportXlsx } from '@/features/import-xlsx'
 import { LegacyImportCard } from '@/features/import-legacy'
+import { InstallCard } from '@/features/install-app'
 import { PageState } from '@/shared/ui'
 import { Workout } from '@/widgets/workout'
 
@@ -34,15 +35,18 @@ export function TodayPage() {
       entries={journal.entries}
       banner={
         me && (
-          <LegacyImportCard
-            userId={me.id}
-            excelSlot={
-              <ImportXlsx
-                exercises={program.data.exercises}
-                buttonVariant="outline"
-              />
-            }
-          />
+          <>
+            <InstallCard dismissible />
+            <LegacyImportCard
+              userId={me.id}
+              excelSlot={
+                <ImportXlsx
+                  exercises={program.data.exercises}
+                  buttonVariant="outline"
+                />
+              }
+            />
+          </>
         )
       }
     />

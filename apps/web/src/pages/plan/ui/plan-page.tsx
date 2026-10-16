@@ -1,5 +1,6 @@
 import { useEntries } from '@/entities/entry'
 import { CYCLE_WEEKS, useProgram } from '@/entities/program'
+import { InstallCard } from '@/features/install-app'
 import { PageState } from '@/shared/ui'
 import { AccountCard } from '@/widgets/account-card'
 import { CyclePlan } from '@/widgets/cycle-plan'
@@ -32,6 +33,7 @@ export function PlanPage() {
       <ScheduleEditor program={program.data} />
       <RulesCard rules={program.data.settings.rules} />
       <ResetCard program={program.data} entries={journal.entries} />
+      <InstallCard />
       <AccountCard />
     </div>
   )

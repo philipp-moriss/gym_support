@@ -99,6 +99,9 @@
   body {
     @apply min-h-screen bg-background font-sans text-foreground antialiased;
     font-size: 16px;
+    /* Установленное приложение на iPhone: контент не уходит под часы и чёлку. */
+    padding-top: env(safe-area-inset-top);
+    overscroll-behavior-y: none;
   }
   ::selection {
     background: var(--hi-vis-yellow);
