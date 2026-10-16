@@ -2,7 +2,7 @@ import { Lock, Trophy as TrophyIcon } from 'lucide-react'
 import { useMemo } from 'react'
 import type { Entry } from '@/entities/entry'
 import { cn, formatDay, num, plural, tonnage } from '@/shared/lib'
-import { Card } from '@/shared/ui'
+import { Card, PageHeader } from '@/shared/ui'
 import { badges, journalStats } from '../model/stats'
 import {
   TROPHIES,
@@ -12,7 +12,13 @@ import {
 } from '../model/trophies'
 
 /** «Награды»: сколько поднято сегодня и всего, с чем это сравнимо, рекорды и значки. */
-export function Achievements({ entries }: { entries: Entry[] }) {
+export function Achievements({
+  entries,
+  back,
+}: {
+  entries: Entry[]
+  back?: { to: string; label: string }
+}) {
   const stats = useMemo(() => journalStats(entries), [entries])
   const today = compareWith(stats.todayKg)
   const total = compareWith(stats.totalKg)
@@ -22,10 +28,7 @@ export function Achievements({ entries }: { entries: Entry[] }) {
 
   return (
     <div className="flex flex-col gap-6">
-      <header className="flex flex-col gap-3">
-        <span className="mono-label text-stage-muted">Сколько ты поднял</span>
-        <h1 className="display text-5xl text-accent sm:text-6xl">Награды</h1>
-      </header>
+      <PageHeader label="Сколько ты поднял" title="Награды" back={back} />
 
       <div className="grid gap-3 sm:grid-cols-2">
         <Card className="rise gap-3">

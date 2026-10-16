@@ -5,8 +5,14 @@ import { cn } from '@/shared/lib'
 import { Button, Card, Collapse, NumberedList, Textarea } from '@/shared/ui'
 
 /** Правила безопасности: аккордеон, редактируются списком по строке. */
-export function RulesCard({ rules }: { rules: string[] }) {
-  const [open, setOpen] = useState(false)
+export function RulesCard({
+  rules,
+  defaultOpen = false,
+}: {
+  rules: string[]
+  defaultOpen?: boolean
+}) {
+  const [open, setOpen] = useState(defaultOpen)
   const [draft, setDraft] = useState<string | null>(null)
   const update = useUpdateSettings()
 

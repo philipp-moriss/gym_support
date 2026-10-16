@@ -1,40 +1,52 @@
-import { useEntries } from '@/entities/entry'
-import { CYCLE_WEEKS, useProgram } from '@/entities/program'
-import { InstallCard } from '@/features/install-app'
-import { PageState } from '@/shared/ui'
-import { AccountCard } from '@/widgets/account-card'
+import { CalendarDays, RefreshCw, ShieldCheck } from 'lucide-react'
+import { CYCLE_WEEKS, programWeek } from '@/entities/program'
+import { routes } from '@/shared/config'
+import { fromIso, plural, todayIso } from '@/shared/lib'
+import { MenuLink, PageHeader, PageState } from '@/shared/ui'
 import { CyclePlan } from '@/widgets/cycle-plan'
-import { ExerciseManager } from '@/widgets/exercise-manager'
-import { ResetCard } from '@/widgets/reset-card'
-import { RulesCard } from '@/widgets/rules-card'
-import { ScheduleEditor } from '@/widgets/schedule-editor'
+import { ProgramOverview } from '@/widgets/program-overview'
+import { usePlanData } from '../model/use-plan-data'
 
+/** «План»: неделя цикла и свои упражнения; настройки — на отдельных страницах. */
 export function PlanPage() {
-  const program = useProgram()
-  const journal = useEntries()
-  if (program.isError || journal.isError)
-    return (
-      <PageState
-        error
-        onRetry={() => void Promise.all([program.refetch(), journal.refetch()])}
-      />
-    )
-  if (!program.data || !journal.data) return <PageState />
+  const { program, entries, ready, error, retry } = usePlanData()
+  if (error) return <PageState error onRetry={retry} />
+  if (!ready || !program) return <PageState />
+  const { settings } = program
+  const week = programWeek(settings.startDate, todayIso())
+  const gymDays = settings.schedule.filter((d) => d.gym === 'yes').length
   return (
     <div className="flex flex-col gap-6">
-      <header className="flex flex-col gap-3">
-        <span className="mono-label text-stage-muted">
-          Цикл · {CYCLE_WEEKS} недели
-        </span>
-        <h1 className="display text-5xl text-accent sm:text-6xl">План</h1>
-      </header>
-      <CyclePlan program={program.data} entries={journal.entries} />
-      <ExerciseManager program={program.data} />
-      <ScheduleEditor program={program.data} />
-      <RulesCard rules={program.data.settings.rules} />
-      <ResetCard program={program.data} entries={journal.entries} />
-      <InstallCard />
-      <AccountCard />
+      <PageHeader label={`Неделя ${week} из ${CYCLE_WEEKS}`} title="План" />
+      <CyclePlan program={program} entries={entries} compact />
+      <ProgramOverview program={program} />
+      <nav className="flex flex-col gap-2" aria-label="Настройки плана">
+        <MenuLink
+          to={routes.planSchedule}
+          icon={CalendarDays}
+          color="var(--matcha-cream)"
+          title="Дни тренировок"
+          hint={`${gymDays} ${plural(gymDays, ['тренировка', 'тренировки', 'тренировок'])} в неделю`}
+        />
+        <MenuLink
+          to={routes.planCycle}
+          icon={RefreshCw}
+          color="var(--hi-vis-yellow)"
+          title="Неделя и сброс"
+          hint={`Старт ${fromIso(settings.startDate).toLocaleDateString('ru-RU')} · повтор недели, сброс`}
+        />
+        <MenuLink
+          to={routes.planRules}
+          icon={ShieldCheck}
+          color="var(--sky)"
+          title="Правила безопасности"
+          hint={
+            settings.rules.length
+              ? `${settings.rules.length} ${plural(settings.rules.length, ['правило', 'правила', 'правил'])}`
+              : 'Пока нет'
+          }
+        />
+      </nav>
     </div>
   )
 }

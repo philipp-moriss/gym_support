@@ -1,5 +1,6 @@
 import { useEntries } from '@/entities/entry'
 import { useProgram } from '@/entities/program'
+import { routes } from '@/shared/config'
 import { PageState } from '@/shared/ui'
 import { JournalList } from '@/widgets/journal-list'
 
@@ -15,6 +16,10 @@ export function JournalPage() {
     )
   if (!program.data || !journal.data) return <PageState />
   return (
-    <JournalList entries={journal.entries} exercises={program.data.exercises} />
+    <JournalList
+      entries={journal.entries}
+      exercises={program.data.exercises}
+      back={{ to: routes.profile, label: 'Профиль' }}
+    />
   )
 }

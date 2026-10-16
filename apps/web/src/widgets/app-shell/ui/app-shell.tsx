@@ -1,16 +1,15 @@
-import { CalendarCheck, ClipboardList, NotebookPen, Trophy } from 'lucide-react'
+import { CalendarCheck, ClipboardList, UserRound } from 'lucide-react'
 import { NavLink, Outlet, useLocation } from 'react-router'
 import { routes } from '@/shared/config'
 import { cn } from '@/shared/lib'
 
 const tabs = [
-  { to: routes.today, label: 'Сегодня', icon: CalendarCheck },
-  { to: routes.journal, label: 'Дневник', icon: NotebookPen },
-  { to: routes.awards, label: 'Награды', icon: Trophy },
-  { to: routes.plan, label: 'План', icon: ClipboardList },
+  { to: routes.today, label: 'Сегодня', icon: CalendarCheck, end: true },
+  { to: routes.plan, label: 'План', icon: ClipboardList, end: false },
+  { to: routes.profile, label: 'Профиль', icon: UserRound, end: false },
 ]
 
-/** Страница и плавающее меню-«пилюля» снизу. На узком экране подпись только у активной вкладки. */
+/** Страница и плавающее меню-«пилюля» снизу: «Сегодня», «План», «Профиль». */
 export function AppShell() {
   const { pathname } = useLocation()
   return (
@@ -28,25 +27,19 @@ export function AppShell() {
             <NavLink
               key={t.to}
               to={t.to}
-              end
+              end={t.end}
               onClick={() => window.scrollTo({ top: 0 })}
               className={({ isActive }) =>
                 cn(
-                  'group flex h-12 items-center gap-2 rounded-full px-4 text-sm font-bold transition-[background-color,color] duration-300 sm:px-5',
+                  'flex h-12 items-center gap-2 rounded-full px-4 text-sm font-bold transition-[background-color,color] duration-300 sm:px-5',
                   isActive
                     ? 'bg-accent text-accent-foreground'
                     : 'text-bone-white/70 hover:text-bone-white',
                 )
               }
             >
-              {({ isActive }) => (
-                <>
-                  <t.icon className="size-5" />
-                  <span className={cn(!isActive && 'sr-only sm:not-sr-only')}>
-                    {t.label}
-                  </span>
-                </>
-              )}
+              <t.icon className="size-5" />
+              {t.label}
             </NavLink>
           ))}
         </div>

@@ -366,7 +366,7 @@ function EmptyProgram() {
         </p>
       </div>
       <Link
-        to={routes.plan}
+        to={routes.planExercises}
         className="inline-flex h-11 items-center rounded-full bg-ink px-[17px] font-bold text-ink-foreground"
       >
         Собрать программу

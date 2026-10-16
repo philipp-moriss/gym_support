@@ -48,7 +48,6 @@ export function ExerciseManager({ program }: { program: Program }) {
   return (
     <Card className="gap-5">
       <div className="flex flex-col gap-1">
-        <h2 className="display text-2xl">Упражнения</h2>
         <p className="text-sm text-muted-foreground">
           Меняй «последний вес» — недели пересчитаются сами, с округлением до
           2,5 кг. Карандаш — подходы, повторы, дни и нюансы.

@@ -11,15 +11,17 @@ import { useDeleteEntry } from '@/features/delete-entry'
 import { ExportButton } from '@/features/export-xlsx'
 import { ImportXlsx } from '@/features/import-xlsx'
 import { formatDay, num } from '@/shared/lib'
-import { Button, Card } from '@/shared/ui'
+import { Button, Card, PageHeader } from '@/shared/ui'
 
 /** «Дневник»: все записи по дням, итоги, выгрузка и загрузка Excel. */
 export function JournalList({
   entries,
   exercises,
+  back,
 }: {
   entries: Entry[]
   exercises: Exercise[]
+  back?: { to: string; label: string }
 }) {
   const remove = useDeleteEntry().mutate
   const exerciseById = useMemo(
@@ -38,17 +40,13 @@ export function JournalList({
 
   return (
     <div className="flex flex-col gap-6">
-      <header className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
-        <div className="flex flex-col gap-3">
-          <span className="mono-label text-stage-muted">Всё, что записано</span>
-          <h1 className="display text-5xl text-accent sm:text-6xl">Дневник</h1>
-        </div>
-        <ExportButton
-          variant="highlight"
-          entries={entries}
-          exercises={exercises}
-        />
-      </header>
+      <PageHeader label="Всё, что записано" title="Дневник" back={back} />
+      <ExportButton
+        variant="highlight"
+        className="self-start"
+        entries={entries}
+        exercises={exercises}
+      />
 
       <div className="grid grid-cols-3 gap-2">
         <Stat label="Тренировок" value={groups.length.toString()} />

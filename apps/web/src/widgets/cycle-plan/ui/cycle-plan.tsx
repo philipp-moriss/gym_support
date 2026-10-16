@@ -12,13 +12,18 @@ import { addDays, cn, fromIso, mondayOf, num, todayIso } from '@/shared/lib'
 import { Button, Card, Input } from '@/shared/ui'
 import { nextCycleBases } from '../model/next-cycle'
 
-/** Неделя цикла: проценты, повтор недели, дата старта; после 4-й — предложение нового цикла. */
+/**
+ * Неделя цикла: проценты, повтор недели, дата старта; после 4-й — предложение
+ * нового цикла. compact — только неделя и проценты (на главной «Плана»).
+ */
 export function CyclePlan({
   program,
   entries,
+  compact,
 }: {
   program: Program
   entries: Entry[]
+  compact?: boolean
 }) {
   const { settings, exercises } = program
   const update = useUpdateSettings().mutate
@@ -103,34 +108,38 @@ export function CyclePlan({
             </div>
           ))}
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={week <= 1}
-            onClick={() =>
-              update({ startDate: addDays(settings.startDate, 7) })
-            }
-          >
-            <RotateCcw />
-            Повторить неделю
-          </Button>
-          <label className="flex items-center gap-2 text-sm">
-            <span className="mono-label text-muted-foreground">Начало</span>
-            <Input
-              type="date"
-              className="h-9 w-auto"
-              value={settings.startDate}
-              onChange={(e) =>
-                e.target.value &&
-                update({ startDate: mondayOf(e.target.value) })
+        {!compact && (
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={week <= 1}
+              onClick={() =>
+                update({ startDate: addDays(settings.startDate, 7) })
               }
-            />
-          </label>
-        </div>
-        <p className="text-sm text-muted-foreground">
-          Неделя прошла тяжело — повтори её, а не переходи к следующей.
-        </p>
+            >
+              <RotateCcw />
+              Повторить неделю
+            </Button>
+            <label className="flex items-center gap-2 text-sm">
+              <span className="mono-label text-muted-foreground">Начало</span>
+              <Input
+                type="date"
+                className="h-9 w-auto"
+                value={settings.startDate}
+                onChange={(e) =>
+                  e.target.value &&
+                  update({ startDate: mondayOf(e.target.value) })
+                }
+              />
+            </label>
+          </div>
+        )}
+        {!compact && (
+          <p className="text-sm text-muted-foreground">
+            Неделя прошла тяжело — повтори её, а не переходи к следующей.
+          </p>
+        )}
       </Card>
     </>
   )
