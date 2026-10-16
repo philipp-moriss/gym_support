@@ -1,9 +1,12 @@
 import type { CellValue, Workbook, Worksheet } from 'exceljs'
 import { legacyEffort, type EntryInput } from '@/entities/entry'
-import type { Exercise } from '@/entities/program'
+import type { Exercise, Unit } from '@/entities/program'
 
 /** Строка дневника из файла, ещё без привязки к программе. */
-export type ParsedRow = Omit<EntryInput, 'exerciseId'>
+export type ParsedRow = Omit<EntryInput, 'exerciseId'> & {
+  /** Из подписи «Планка (сек)»; нужна, если упражнение добавят в программу. */
+  unit: Unit
+}
 
 export class ImportError extends Error {}
 
@@ -141,10 +144,9 @@ export function parseJournal(wb: Workbook): ParsedRow[] {
     const rows: ParsedRow[] = []
     for (let r = headerRow + 1; r <= ws.rowCount; r++) {
       const date = parseDate(get(r, 'date'))
-      const exercise = text(get(r, 'exercise')).replace(
-        /\s*\((сек|мин)\)\s*$/i,
-        '',
-      )
+      const rawName = text(get(r, 'exercise'))
+      const suffix = rawName.match(/\s*\((сек|мин)\)\s*$/i)
+      const exercise = suffix ? rawName.slice(0, suffix.index) : rawName
       if (!date || !exercise) continue
       if (skipExample) {
         skipExample = false
@@ -162,6 +164,11 @@ export function parseJournal(wb: Workbook): ParsedRow[] {
         pain: clamp10(number(get(r, 'pain'))),
         effort: clamp10(number(get(r, 'effort'))) ?? feel ?? null,
         notes: text(get(r, 'notes')).slice(0, 2000),
+        unit: suffix
+          ? suffix[1].toLowerCase() === 'сек'
+            ? 'sec'
+            : 'min'
+          : 'reps',
       })
     }
     return rows
@@ -169,7 +176,7 @@ export function parseJournal(wb: Workbook): ParsedRow[] {
   throw new ImportError('Не нашли лист с колонками «Дата» и «Упражнение».')
 }
 
-const normalize = (s: string) =>
+export const normalize = (s: string) =>
   s
     .toLowerCase()
     .replace(/ё/g, 'е')
@@ -185,7 +192,7 @@ export function matchExercises(rows: ParsedRow[], exercises: Exercise[]) {
     byName.set(normalize(ex.name), ex)
   }
   const unmatched = new Set<string>()
-  const entries: EntryInput[] = rows.map((row) => {
+  const entries: EntryInput[] = rows.map(({ unit: _unit, ...row }) => {
     const ex = byName.get(normalize(row.exercise))
     if (!ex) unmatched.add(row.exercise)
     return {
