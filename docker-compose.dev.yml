@@ -1,0 +1,62 @@
+# Полный локальный стек одной командой: docker compose -f docker-compose.dev.yml up --build
+# Порты нестандартные, чтобы не пересекаться с другими проектами на машине.
+name: gym-dev
+
+services:
+  postgres:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_DB: gym
+      POSTGRES_USER: gym
+      POSTGRES_PASSWORD: gym
+    ports:
+      - '5462:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U gym -d gym']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ./apps/backend
+      dockerfile: Dockerfile.dev
+    ports:
+      - '3020:3020'
+    volumes:
+      - ./apps/backend:/app
+      - /app/node_modules
+    # Dev-секреты прямо здесь, чтобы стек поднимался без ручной настройки.
+    # .env.development (если есть) перекрывается этими значениями.
+    environment:
+      PORT: 3020
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      DATABASE_NAME: gym
+      DATABASE_USER: gym
+      DATABASE_PASSWORD: gym
+      JWT_SECRET: dev-jwt-secret-change-me
+      CODE_PEPPER: dev-code-pepper-change-me
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  web:
+    build:
+      context: ./apps/web
+      dockerfile: Dockerfile.dev
+    ports:
+      - '5190:5190'
+    volumes:
+      - ./apps/web:/app
+      - /app/node_modules
+    environment:
+      API_PROXY_TARGET: http://backend:3020
+    depends_on:
+      - backend
+
+volumes:
+  pgdata:

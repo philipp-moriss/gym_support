@@ -1,0 +1,11 @@
+import { useEntries } from '@/entities/entry'
+import { PageState } from '@/shared/ui'
+import { Achievements } from '@/widgets/achievements'
+
+export function AwardsPage() {
+  const journal = useEntries()
+  if (journal.isError)
+    return <PageState error onRetry={() => void journal.refetch()} />
+  if (!journal.data) return <PageState />
+  return <Achievements entries={journal.entries} />
+}
