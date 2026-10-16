@@ -5,8 +5,6 @@
   <path d="M176 262 C128 196 150 116 256 116 C362 116 384 196 336 262" fill="none" stroke="#1a1a1a" stroke-width="40" stroke-linecap="round"/>
   <circle cx="256" cy="312" r="136" fill="#1a1a1a"/>
   <rect x="176" y="424" width="160" height="22" rx="10" fill="#1a1a1a"/>
-  <circle cx="190" cy="342" r="17" fill="#f8c1ba"/>
-  <circle cx="322" cy="342" r="17" fill="#f8c1ba"/>
   <circle cx="216" cy="298" r="15" fill="#f4ed36"/>
   <circle cx="296" cy="298" r="15" fill="#f4ed36"/>
   <path d="M220 344 Q256 380 292 344" fill="none" stroke="#f4ed36" stroke-width="14" stroke-linecap="round"/>
