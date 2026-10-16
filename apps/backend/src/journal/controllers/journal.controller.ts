@@ -5,6 +5,7 @@ import {
   Get,
   HttpCode,
   Param,
+  Patch,
   ParseUUIDPipe,
   Post,
   Put,
@@ -15,6 +16,7 @@ import {
   CreateEntryDto,
   DraftsDto,
   ImportEntriesDto,
+  UpdateEntryDto,
 } from '../dto/journal.dto';
 import { DraftsService } from '../services/drafts.service';
 import { EntriesService } from '../services/entries.service';
@@ -44,6 +46,16 @@ export class JournalController {
   @HttpCode(200)
   import(@CurrentUser() user: AuthUser, @Body() dto: ImportEntriesDto) {
     return this.entries.import(user.id, dto.entries);
+  }
+
+  /** Исправить запись. */
+  @Patch('entries/:id')
+  update(
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateEntryDto,
+  ) {
+    return this.entries.update(user.id, id, dto);
   }
 
   @Delete('entries/:id')

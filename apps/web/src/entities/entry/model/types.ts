@@ -18,9 +18,13 @@ export interface Entry {
   /** Сложность 0–10 */
   effort: number | null
   notes: string
+  /** Повторы по подходам, если отмечали каждый: [12, 12, 10] */
+  setReps?: number[] | null
+  /** Только на телефоне: записано без сети, ещё не отправлено */
+  pending?: boolean
 }
 
-export type EntryInput = Omit<Entry, 'id' | 'createdAt'>
+export type EntryInput = Omit<Entry, 'id' | 'createdAt' | 'pending'>
 
 /** Несохранённые правки формы упражнения за сегодня. */
 export interface Draft {
@@ -30,6 +34,8 @@ export interface Draft {
   pain: number
   effort: number
   notes: string
+  /** Отмеченные подходы: повторы каждого, по порядку */
+  setsDone?: number[]
 }
 
 export interface Drafts {

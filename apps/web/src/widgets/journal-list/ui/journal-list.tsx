@@ -1,6 +1,12 @@
-import { NotebookPen, Trash2 } from 'lucide-react'
-import { useMemo } from 'react'
-import { PainDot, sortEntries, volume, type Entry } from '@/entities/entry'
+import { CloudOff, NotebookPen, Pencil, Trash2 } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import {
+  PainDot,
+  repsText,
+  sortEntries,
+  volume,
+  type Entry,
+} from '@/entities/entry'
 import {
   MuscleDot,
   setsReps,
@@ -8,6 +14,7 @@ import {
   type Exercise,
 } from '@/entities/program'
 import { useDeleteEntry } from '@/features/delete-entry'
+import { EntryEditForm } from '@/features/edit-entry'
 import { ExportButton } from '@/features/export-xlsx'
 import { ImportXlsx } from '@/features/import-xlsx'
 import { formatDay, num } from '@/shared/lib'
@@ -24,6 +31,7 @@ export function JournalList({
   back?: { to: string; label: string }
 }) {
   const remove = useDeleteEntry().mutate
+  const [editing, setEditing] = useState<string | null>(null)
   const exerciseById = useMemo(
     () => new Map(exercises.map((e) => [e.id, e])),
     [exercises],
@@ -89,36 +97,65 @@ export function JournalList({
                   return (
                     <li
                       key={e.id}
-                      className="flex items-center gap-3 border-t border-border py-3 first:border-t-0"
+                      className="flex flex-col gap-3 border-t border-border py-3 first:border-t-0"
                     >
-                      <MuscleDot muscle={ex?.muscle} />
-                      <div className="flex min-w-0 flex-1 flex-col gap-1">
-                        <span className="truncate font-semibold">
-                          {ex?.short ?? e.exercise}
-                        </span>
-                        <span className="font-mono text-sm text-muted-foreground">
-                          {(!ex || ex.step > 0) && `${weightText(e.weight)} · `}
-                          {ex
-                            ? setsReps(ex, e.sets, e.reps)
-                            : `${e.sets} × ${e.reps}`}
-                          {e.effort !== null && ` · сложн. ${e.effort}/10`}
-                        </span>
-                        {e.notes && (
-                          <span className="text-sm text-muted-foreground">
-                            {e.notes}
+                      <div className="flex items-center gap-3">
+                        <MuscleDot muscle={ex?.muscle} />
+                        <button
+                          type="button"
+                          className="flex min-w-0 flex-1 cursor-pointer flex-col gap-1 text-left"
+                          aria-expanded={editing === e.id}
+                          disabled={e.id.startsWith('temp-')}
+                          onClick={() =>
+                            setEditing(editing === e.id ? null : e.id)
+                          }
+                        >
+                          <span className="flex items-center gap-2 font-semibold">
+                            <span className="truncate">
+                              {ex?.short ?? e.exercise}
+                            </span>
+                            <Pencil className="size-3.5 shrink-0 text-muted-foreground" />
                           </span>
-                        )}
+                          <span className="font-mono text-sm text-muted-foreground">
+                            {(!ex || ex.step > 0) &&
+                              `${weightText(e.weight)} · `}
+                            {e.setReps?.length
+                              ? repsText(e)
+                              : ex
+                                ? setsReps(ex, e.sets, e.reps)
+                                : `${e.sets} × ${e.reps}`}
+                            {e.effort !== null && ` · сложн. ${e.effort}/10`}
+                          </span>
+                          {e.notes && (
+                            <span className="text-sm text-muted-foreground">
+                              {e.notes}
+                            </span>
+                          )}
+                          {e.pending && (
+                            <span className="inline-flex items-center gap-1 text-xs font-bold text-magenta-punch">
+                              <CloudOff className="size-3.5" />
+                              Ещё не отправлено — уйдёт, когда появится сеть
+                            </span>
+                          )}
+                        </button>
+                        <PainDot pain={e.pain} />
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          aria-label={`Удалить «${e.exercise}»`}
+                          disabled={e.id.startsWith('temp-')}
+                          onClick={() => remove(e.id)}
+                        >
+                          <Trash2 />
+                        </Button>
                       </div>
-                      <PainDot pain={e.pain} />
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        aria-label={`Удалить «${e.exercise}»`}
-                        disabled={e.id.startsWith('temp-')}
-                        onClick={() => remove(e.id)}
-                      >
-                        <Trash2 />
-                      </Button>
+                      {editing === e.id && (
+                        <EntryEditForm
+                          entry={e}
+                          exercise={ex}
+                          onDone={() => setEditing(null)}
+                        />
+                      )}
                     </li>
                   )
                 })}

@@ -23,6 +23,7 @@ import {
   type Program,
 } from '@/entities/program'
 import { useLogEntry } from '@/features/log-entry'
+import { restTimer } from '@/features/rest-timer'
 import { useUpdateSettings } from '@/features/update-settings'
 import { routes } from '@/shared/config'
 import {
@@ -94,7 +95,11 @@ export function Workout({
     const closesWorkout = list.all.every(
       (e) => e.id === ex.id || doneIds.has(e.id),
     )
-    haptic(closesWorkout && !doneIds.has(ex.id) ? 'success' : 'tap')
+    const finishing = closesWorkout && !doneIds.has(ex.id)
+    haptic(finishing ? 'success' : 'tap')
+    // Дальше следующее упражнение — сначала отдых. Последнее — отдыхать незачем.
+    if (finishing) restTimer.stop()
+    else restTimer.start()
     logEntry.mutate({
       ...values,
       date,

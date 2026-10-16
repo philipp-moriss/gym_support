@@ -9,7 +9,9 @@ export function usePlanData() {
     program: program.data,
     entries: journal.entries,
     ready: !!program.data && !!journal.data,
-    error: program.isError || journal.isError,
+    // Ошибка — только если показать нечего: сохранённые данные лучше пустого экрана.
+    error:
+      (program.isError && !program.data) || (journal.isError && !journal.data),
     retry: () => void Promise.all([program.refetch(), journal.refetch()]),
   }
 }

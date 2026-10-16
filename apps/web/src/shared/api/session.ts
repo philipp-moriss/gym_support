@@ -63,12 +63,13 @@ export const session = {
 async function exchangeRefreshToken(): Promise<boolean> {
   const refreshToken = readRefresh()
   if (!refreshToken) return false
+  // Нет сети — бросаем ошибку дальше: это не «сессия истекла», выходить не нужно.
   const res = await fetch(`${env.apiUrl}/auth/refresh`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ refreshToken }),
-  }).catch(() => null)
-  if (!res?.ok) return false
+  })
+  if (!res.ok) return false
   session.set((await res.json()) as SessionTokens)
   return true
 }

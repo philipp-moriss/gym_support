@@ -78,3 +78,10 @@ export const api = {
     request<T>(path, { method: 'PUT', body: JSON.stringify(body) }),
   delete: (path: string) => request<void>(path, { method: 'DELETE' }),
 }
+
+/**
+ * Запрос не дошёл до сервера (нет сети) или сервер упал (5xx) — такое имеет
+ * смысл повторить позже. Ответы 4xx — нет: данные не примут и потом.
+ */
+export const isRetryable = (error: unknown) =>
+  !(error instanceof ApiError) || error.status >= 500

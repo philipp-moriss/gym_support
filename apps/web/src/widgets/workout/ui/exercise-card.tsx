@@ -18,6 +18,7 @@ import {
   PainDot,
   effortLabel,
   type Draft,
+  repsText,
   type Entry,
   type EntryInput,
 } from '@/entities/entry'
@@ -30,6 +31,7 @@ import {
   type Exercise,
 } from '@/entities/program'
 import { useDraft } from '@/features/edit-draft'
+import { restTimer } from '@/features/rest-timer'
 import { formatDay, num } from '@/shared/lib'
 import {
   Button,
@@ -41,10 +43,11 @@ import {
 } from '@/shared/ui'
 import type { Suggestion, Tone } from '../model/suggest'
 import { Confetti } from './confetti'
+import { SetTracker } from './set-tracker'
 
 type LogValues = Pick<
   EntryInput,
-  'weight' | 'sets' | 'reps' | 'pain' | 'effort' | 'notes'
+  'weight' | 'sets' | 'reps' | 'setReps' | 'pain' | 'effort' | 'notes'
 >
 
 const toneBadge: Record<
@@ -258,6 +261,7 @@ function Details({
   onLog: (values: LogValues) => void
 }) {
   const { weight, sets, reps, pain, effort, notes } = values
+  const setsDone = values.setsDone ?? []
 
   const repsStep = ex.unit === 'sec' ? 5 : 1
 
@@ -307,7 +311,9 @@ function Details({
                 </span>
                 <span className="flex-1 truncate text-right">
                   {ex.step > 0 && `${weightText(e.weight)} · `}
-                  {setsReps(ex, e.sets, e.reps)}
+                  {e.setReps?.length
+                    ? repsText(e)
+                    : setsReps(ex, e.sets, e.reps)}
                 </span>
                 <PainDot pain={e.pain} />
               </li>
@@ -324,7 +330,7 @@ function Details({
             {today
               .map(
                 (e) =>
-                  `${ex.step > 0 ? `${num(e.weight)} кг · ` : ''}${e.sets}×${e.reps}`,
+                  `${ex.step > 0 ? `${num(e.weight)} кг · ` : ''}${repsText(e)}`,
               )
               .join(', ')}
           </p>
@@ -363,6 +369,7 @@ function Details({
             label="Подходы"
             value={sets}
             min={1}
+            decimals={false}
             onChange={(v) => onChange({ sets: v })}
           />
           <Stepper
@@ -377,9 +384,19 @@ function Details({
             value={reps}
             min={1}
             step={repsStep}
+            decimals={false}
             onChange={(v) => onChange({ reps: v })}
           />
         </div>
+
+        <SetTracker
+          planned={sets}
+          reps={reps}
+          repsLabel={ex.unit === 'reps' ? 'Повторы' : 'Время'}
+          done={setsDone}
+          onChange={(next) => onChange({ setsDone: next })}
+          onSetDone={() => restTimer.start()}
+        />
 
         <label className="flex flex-col gap-3">
           <span className="flex items-baseline justify-between gap-2">
@@ -439,10 +456,17 @@ function Details({
           variant="ink"
           className="relative w-full"
           onClick={() => {
+            // Отмечали подходы — пишем именно их: число и повторы каждого.
+            const marked = setsDone.length > 0
             onLog({
               weight: ex.step > 0 ? weight : 0,
-              sets,
-              reps,
+              sets: marked ? setsDone.length : sets,
+              reps: marked
+                ? Math.round(
+                    setsDone.reduce((a, r) => a + r, 0) / setsDone.length,
+                  )
+                : reps,
+              setReps: marked ? setsDone : null,
               pain,
               effort,
               notes: notes.trim(),
@@ -451,6 +475,8 @@ function Details({
         >
           <Check strokeWidth={3} />
           {today.length ? 'Записать ещё раз' : 'Сделано'}
+          {setsDone.length > 0 &&
+            ` · ${setsDone.length} из ${Math.max(sets, setsDone.length)}`}
           <HapticOverlay />
         </Button>
       </section>

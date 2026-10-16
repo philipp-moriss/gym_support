@@ -5,7 +5,7 @@ import { Achievements } from '@/widgets/achievements'
 
 export function AwardsPage() {
   const journal = useEntries()
-  if (journal.isError)
+  if (journal.isError && !journal.data)
     return <PageState error onRetry={() => void journal.refetch()} />
   if (!journal.data) return <PageState />
   return (

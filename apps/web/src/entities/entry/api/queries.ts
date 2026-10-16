@@ -1,5 +1,7 @@
 import { queryOptions, useQuery } from '@tanstack/react-query'
+import { useMemo, useSyncExternalStore } from 'react'
 import { api } from '@/shared/api'
+import { pendingAsEntry, pendingEntries } from '../model/pending'
 import type { Drafts, Entry } from '../model/types'
 
 export const entriesKey = ['journal', 'entries'] as const
@@ -21,7 +23,19 @@ export const draftsQuery = () =>
 
 const EMPTY: Entry[] = []
 
+/** Записи с сервера и ещё не отправленные (сделанные без сети) — вместе. */
 export function useEntries() {
   const query = useQuery(entriesQuery())
-  return { ...query, entries: query.data ?? EMPTY }
+  const pending = useSyncExternalStore(
+    pendingEntries.subscribe,
+    pendingEntries.list,
+  )
+  const entries = useMemo(
+    () =>
+      pending.length
+        ? [...pending.map(pendingAsEntry), ...(query.data ?? EMPTY)]
+        : (query.data ?? EMPTY),
+    [pending, query.data],
+  )
+  return { ...query, entries }
 }

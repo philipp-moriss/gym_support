@@ -14,6 +14,8 @@ export interface Draft {
   pain: number;
   effort: number;
   notes: string;
+  /** Отмеченные подходы: повторы каждого, по порядку. */
+  setsDone?: number[];
 }
 
 @Entity('drafts')

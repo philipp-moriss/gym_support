@@ -19,6 +19,13 @@ export function sanitizeDraft(raw: unknown): Draft | null {
     pain: Math.round(clamp(d.pain, 0, 10, 0)),
     effort: Math.round(clamp(d.effort, 0, 10, 5)),
     notes: typeof d.notes === 'string' ? d.notes.slice(0, 2000) : '',
+    ...(Array.isArray(d.setsDone)
+      ? {
+          setsDone: d.setsDone
+            .slice(0, 100)
+            .map((r) => Math.round(clamp(r, 0, 10_000, 0))),
+        }
+      : {}),
   };
 }
 

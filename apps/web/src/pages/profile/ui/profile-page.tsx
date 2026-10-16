@@ -9,7 +9,7 @@ import { AccountCard } from '@/widgets/account-card'
 /** «Профиль»: аккаунт, дневник и награды, установка на телефон. */
 export function ProfilePage() {
   const journal = useEntries()
-  if (journal.isError)
+  if (journal.isError && !journal.data)
     return <PageState error onRetry={() => void journal.refetch()} />
   if (!journal.data) return <PageState />
   const { entries } = journal

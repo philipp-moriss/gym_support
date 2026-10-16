@@ -1,5 +1,7 @@
 import { CalendarCheck, ClipboardList, UserRound } from 'lucide-react'
 import { NavLink, Outlet, useLocation } from 'react-router'
+import { PendingBadge } from '@/features/log-entry'
+import { RestTimerBar } from '@/features/rest-timer'
 import { routes } from '@/shared/config'
 import { cn, haptic } from '@/shared/lib'
 import { HapticOverlay } from '@/shared/ui'
@@ -17,12 +19,14 @@ export function AppShell() {
     <>
       <main
         key={pathname}
-        className="rise mx-auto flex w-full max-w-2xl flex-col px-4 pt-8 pb-32 sm:pt-12"
+        className="rise mx-auto flex w-full max-w-2xl flex-col px-4 pt-8 pb-48 sm:pt-12"
       >
         <Outlet />
       </main>
 
-      <nav className="fixed inset-x-0 bottom-0 z-20 flex justify-center px-4 pb-[max(16px,env(safe-area-inset-bottom))]">
+      <nav className="fixed inset-x-0 bottom-0 z-20 flex flex-col items-center gap-2 px-4 pb-[max(16px,env(safe-area-inset-bottom))]">
+        <PendingBadge />
+        <RestTimerBar />
         <div className="flex gap-1 rounded-full bg-ink p-1.5">
           {tabs.map((t) => (
             <NavLink

@@ -14,7 +14,11 @@ export function TodayPage() {
   const drafts = useQuery(draftsQuery())
   const { data: me } = useMe()
 
-  if (program.isError || journal.isError || drafts.isError) {
+  if (
+    (program.isError && !program.data) ||
+    (journal.isError && !journal.data) ||
+    (drafts.isError && !drafts.data)
+  ) {
     return (
       <PageState
         error

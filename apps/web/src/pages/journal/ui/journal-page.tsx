@@ -7,7 +7,7 @@ import { JournalList } from '@/widgets/journal-list'
 export function JournalPage() {
   const program = useProgram()
   const journal = useEntries()
-  if (program.isError || journal.isError)
+  if ((program.isError && !program.data) || (journal.isError && !journal.data))
     return (
       <PageState
         error

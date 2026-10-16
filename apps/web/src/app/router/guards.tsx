@@ -1,6 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query'
-import { useEffect } from 'react'
+import { useEffect, useLayoutEffect } from 'react'
 import { Navigate, Outlet, useLocation, useNavigate } from 'react-router'
+import { pendingEntries } from '@/entities/entry'
 import { useMe } from '@/entities/session'
 import { session } from '@/shared/api'
 import { routes } from '@/shared/config'
@@ -13,6 +14,11 @@ export function RequireAuth() {
   const queryClient = useQueryClient()
   const hasSession = session.hasSession()
   const { data: me, isError } = useMe()
+
+  // Очередь записей без сети — своя у каждого аккаунта.
+  useLayoutEffect(() => {
+    pendingEntries.setOwner(me?.id ?? null)
+  }, [me?.id])
 
   // Сессия умерла посреди работы: чистим кэш и идём на вход.
   useEffect(
@@ -27,7 +33,8 @@ export function RequireAuth() {
     [navigate, queryClient, location.pathname],
   )
 
-  if (!hasSession || isError)
+  // Без сети «me» не обновится, но сохранённый на телефоне — годится.
+  if (!hasSession || (isError && !me))
     return (
       <Navigate to={routes.login} replace state={{ from: location.pathname }} />
     )

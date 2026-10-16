@@ -42,6 +42,10 @@ export class Entry extends BaseEntity {
   })
   weight: number;
 
+  /** Повторы по подходам, если отмечали каждый подход: [12, 12, 10]. sets и reps тогда — их число и среднее. */
+  @Column({ type: 'jsonb', nullable: true })
+  setReps: number[] | null;
+
   /** Боль в спине 0–10. */
   @Column({ type: 'smallint', nullable: true })
   pain: number | null;

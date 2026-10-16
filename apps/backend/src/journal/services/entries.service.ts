@@ -1,8 +1,23 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import type { CreateEntryDto } from '../dto/journal.dto';
+import type { CreateEntryDto, UpdateEntryDto } from '../dto/journal.dto';
 import { Entry } from '../entities/entry.entity';
+
+/**
+ * Отмечали каждый подход — число подходов и средние повторы считаем из них,
+ * чтобы sets × reps × вес оставались осмысленными для итогов и экспорта.
+ */
+function setsAndReps(dto: Pick<CreateEntryDto, 'sets' | 'reps' | 'setReps'>) {
+  const setReps = dto.setReps?.length ? dto.setReps : null;
+  if (!setReps) return { sets: dto.sets, reps: dto.reps, setReps: null };
+  const total = setReps.reduce((s, r) => s + r, 0);
+  return {
+    sets: setReps.length,
+    reps: Math.round(total / setReps.length),
+    setReps,
+  };
+}
 
 const view = ({ userId: _userId, updatedAt: _u, ...rest }: Entry) => rest;
 
@@ -35,6 +50,19 @@ export class EntriesService {
     return view(
       await this.entries.save(this.entries.create(this.toRow(userId, dto))),
     );
+  }
+
+  /** Правка записи: исправить вес, повторы, отметки, заметку. */
+  async update(userId: string, id: string, dto: UpdateEntryDto) {
+    const entry = await this.entries.findOneBy({ userId, id });
+    if (!entry) throw new NotFoundException();
+    const merged = { ...entry, ...dto };
+    const next = this.toRow(userId, {
+      ...merged,
+      // Новые подходы перекрывают старые; явный null — убрать разбивку.
+      setReps: dto.setReps !== undefined ? dto.setReps : entry.setReps,
+    });
+    return view(await this.entries.save({ ...entry, ...next }));
   }
 
   async remove(userId: string, id: string) {
@@ -83,8 +111,7 @@ export class EntriesService {
       week: dto.week ?? null,
       exerciseId: dto.exerciseId || null,
       exercise: dto.exercise.trim(),
-      sets: dto.sets,
-      reps: dto.reps,
+      ...setsAndReps(dto),
       weight: dto.weight,
       pain: dto.pain ?? null,
       effort: dto.effort ?? null,

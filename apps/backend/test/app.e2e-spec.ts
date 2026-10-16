@@ -245,4 +245,60 @@ describe('journal flow (e2e)', () => {
       .send({ code: changed.body.code })
       .expect(200);
   });
+
+  it('повторы по подходам и правка записи', async () => {
+    const http = request(app.getHttpServer());
+    const { accessToken } = (
+      await http.post('/api/auth/register').send({ template: 'empty' })
+    ).body;
+    const auth = { Authorization: `Bearer ${accessToken}` };
+    const created = await http
+      .post('/api/journal/entries')
+      .set(auth)
+      .send({
+        date: '2026-10-16',
+        exercise: 'Жим',
+        sets: 3,
+        reps: 12,
+        weight: 40,
+        setReps: [12, 12, 9],
+      })
+      .expect(201);
+    expect(created.body).toMatchObject({
+      sets: 3,
+      reps: 11,
+      setReps: [12, 12, 9],
+    });
+
+    const edited = await http
+      .patch(`/api/journal/entries/${created.body.id}`)
+      .set(auth)
+      .send({ weight: 42.5, setReps: [12, 10], notes: 'поправил' })
+      .expect(200);
+    expect(edited.body).toMatchObject({
+      weight: 42.5,
+      sets: 2,
+      reps: 11,
+      setReps: [12, 10],
+      notes: 'поправил',
+      exercise: 'Жим',
+    });
+
+    const plain = await http
+      .patch(`/api/journal/entries/${created.body.id}`)
+      .set(auth)
+      .send({ setReps: null, sets: 4, reps: 8 })
+      .expect(200);
+    expect(plain.body).toMatchObject({ sets: 4, reps: 8, setReps: null });
+
+    // Чужую запись не поправить.
+    const other = (
+      await http.post('/api/auth/register').send({ template: 'empty' })
+    ).body;
+    await http
+      .patch(`/api/journal/entries/${created.body.id}`)
+      .set({ Authorization: `Bearer ${other.accessToken}` })
+      .send({ weight: 1 })
+      .expect(404);
+  });
 });

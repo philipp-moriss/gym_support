@@ -189,8 +189,15 @@ export async function buildWorkbook(entries: Entry[], exercises: Exercise[]) {
       e.reps,
       e.pain ?? '',
       e.effort ?? '',
-      { formula: `D${r}*E${r}*F${r}`, result: volume(e) },
-      e.notes,
+      // По подходам повторы разные — объём числом, а не формулой.
+      e.setReps?.length
+        ? volume(e)
+        : { formula: `D${r}*E${r}*F${r}`, result: volume(e) },
+      e.setReps?.length
+        ? [`Подходы: ${e.setReps.join(' · ')}`, e.notes]
+            .filter(Boolean)
+            .join('. ')
+        : e.notes,
     ]
     paintBodyRow(journal, r, journalCols, i % 2 === 1)
     // Боль 4+ подсвечиваем розовым, как сигнал снизить нагрузку

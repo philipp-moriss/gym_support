@@ -1,4 +1,4 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
   ArrayMaxSize,
@@ -36,7 +36,18 @@ export class CreateEntryDto {
   @IsString()
   @MaxLength(2000)
   notes?: string;
+
+  @ApiPropertyOptional({ type: [Number], description: 'Повторы по подходам' })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(100)
+  @IsInt({ each: true })
+  @Min(0, { each: true })
+  @Max(10_000, { each: true })
+  setReps?: number[] | null;
 }
+
+export class UpdateEntryDto extends PartialType(CreateEntryDto) {}
 
 export class ImportEntriesDto {
   @ApiProperty({ type: [CreateEntryDto] })
