@@ -1,6 +1,7 @@
 import { Delete } from 'lucide-react'
 import { useEffect } from 'react'
 import { cn, haptic } from '@/shared/lib'
+import { HapticOverlay } from './haptic-overlay'
 
 const KEYS = [
   ['1', ''],
@@ -104,9 +105,10 @@ export function PinPad({
           onClick={erase}
           disabled={disabled || !value}
           aria-label="Стереть"
-          className="grid size-[76px] cursor-pointer place-items-center rounded-full text-bone-white transition-opacity active:opacity-60 disabled:opacity-0"
+          className="relative grid size-[76px] cursor-pointer place-items-center rounded-full text-bone-white transition-opacity active:opacity-60 disabled:opacity-0"
         >
           <Delete className="size-7" />
+          <HapticOverlay disabled={disabled || !value} />
         </button>
       </div>
     </div>
@@ -130,9 +132,10 @@ function PadKey({
       onClick={onClick}
       disabled={disabled}
       aria-label={label}
-      className="flex size-[76px] cursor-pointer flex-col items-center justify-center gap-0.5 rounded-full bg-block text-bone-white transition-[background-color,transform] duration-100 select-none active:scale-95 active:bg-bone-white/45 disabled:opacity-60"
+      className="relative flex size-[76px] cursor-pointer flex-col items-center justify-center gap-0.5 rounded-full bg-block text-bone-white transition-[background-color,transform] duration-100 select-none active:scale-95 active:bg-bone-white/45 disabled:opacity-60"
     >
       {children}
+      <HapticOverlay disabled={disabled} />
     </button>
   )
 }

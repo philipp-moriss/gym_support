@@ -2,6 +2,7 @@ import { CalendarCheck, ClipboardList, UserRound } from 'lucide-react'
 import { NavLink, Outlet, useLocation } from 'react-router'
 import { routes } from '@/shared/config'
 import { cn, haptic } from '@/shared/lib'
+import { HapticOverlay } from '@/shared/ui'
 
 const tabs = [
   { to: routes.today, label: 'Сегодня', icon: CalendarCheck, end: true },
@@ -34,7 +35,7 @@ export function AppShell() {
               }}
               className={({ isActive }) =>
                 cn(
-                  'flex h-12 items-center gap-2 rounded-full px-4 text-sm font-bold transition-[background-color,color] duration-300 sm:px-5',
+                  'relative flex h-12 items-center gap-2 rounded-full px-4 text-sm font-bold transition-[background-color,color] duration-300 sm:px-5',
                   isActive
                     ? 'bg-accent text-accent-foreground'
                     : 'text-bone-white/70 hover:text-bone-white',
@@ -43,6 +44,7 @@ export function AppShell() {
             >
               <t.icon className="size-5" />
               {t.label}
+              <HapticOverlay />
             </NavLink>
           ))}
         </div>
