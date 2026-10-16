@@ -31,7 +31,14 @@ import {
 } from '@/entities/program'
 import { useDraft } from '@/features/edit-draft'
 import { formatDay, num } from '@/shared/lib'
-import { Button, Collapse, Input, NumberedList, Stepper } from '@/shared/ui'
+import {
+  Button,
+  Collapse,
+  HapticOverlay,
+  Input,
+  NumberedList,
+  Stepper,
+} from '@/shared/ui'
 import type { Suggestion, Tone } from '../model/suggest'
 import { Confetti } from './confetti'
 
@@ -430,7 +437,7 @@ function Details({
 
         <Button
           variant="ink"
-          className="w-full"
+          className="relative w-full"
           onClick={() => {
             onLog({
               weight: ex.step > 0 ? weight : 0,
@@ -444,6 +451,7 @@ function Details({
         >
           <Check strokeWidth={3} />
           {today.length ? 'Записать ещё раз' : 'Сделано'}
+          <HapticOverlay />
         </Button>
       </section>
     </div>

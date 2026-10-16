@@ -25,7 +25,14 @@ import {
 import { useLogEntry } from '@/features/log-entry'
 import { useUpdateSettings } from '@/features/update-settings'
 import { routes } from '@/shared/config'
-import { formatDay, num, todayIso, weekday, weekdayLong } from '@/shared/lib'
+import {
+  formatDay,
+  haptic,
+  num,
+  todayIso,
+  weekday,
+  weekdayLong,
+} from '@/shared/lib'
 import { Button } from '@/shared/ui'
 import { suggest } from '../model/suggest'
 import { ExerciseCard } from './exercise-card'
@@ -83,6 +90,11 @@ export function Workout({
       'weight' | 'sets' | 'reps' | 'pain' | 'effort' | 'notes'
     >,
   ) {
+    // Последнее невыполненное упражнение закрывает тренировку — «победная» серия.
+    const closesWorkout = list.all.every(
+      (e) => e.id === ex.id || doneIds.has(e.id),
+    )
+    haptic(closesWorkout && !doneIds.has(ex.id) ? 'success' : 'tap')
     logEntry.mutate({
       ...values,
       date,

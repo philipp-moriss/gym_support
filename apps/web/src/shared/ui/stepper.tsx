@@ -1,4 +1,5 @@
-import { num } from '@/shared/lib'
+import { haptic, num } from '@/shared/lib'
+import { HapticOverlay } from './haptic-overlay'
 
 /** Большой степпер «− 30 кг +»: вес и повторы меняются пальцем, без клавиатуры. */
 export function Stepper({
@@ -24,10 +25,14 @@ export function Stepper({
         <button
           type="button"
           aria-label={`${label}: меньше`}
-          onClick={() => onChange(Math.max(min, round(value - step)))}
-          className="grid size-10 shrink-0 cursor-pointer place-items-center rounded-full text-xl font-bold transition-transform hover:bg-ink/5 active:scale-90"
+          onClick={() => {
+            haptic()
+            onChange(Math.max(min, round(value - step)))
+          }}
+          className="relative grid size-10 shrink-0 cursor-pointer place-items-center rounded-full text-xl font-bold transition-transform hover:bg-ink/5 active:scale-90"
         >
           −
+          <HapticOverlay />
         </button>
         <span className="flex-1 truncate text-center font-mono text-lg font-bold tabular-nums">
           {num(value)}
@@ -40,10 +45,14 @@ export function Stepper({
         <button
           type="button"
           aria-label={`${label}: больше`}
-          onClick={() => onChange(round(value + step))}
-          className="grid size-10 shrink-0 cursor-pointer place-items-center rounded-full bg-ink text-xl font-bold text-ink-foreground transition-transform active:scale-90"
+          onClick={() => {
+            haptic()
+            onChange(round(value + step))
+          }}
+          className="relative grid size-10 shrink-0 cursor-pointer place-items-center rounded-full bg-ink text-xl font-bold text-ink-foreground transition-transform active:scale-90"
         >
           +
+          <HapticOverlay />
         </button>
       </div>
     </div>
