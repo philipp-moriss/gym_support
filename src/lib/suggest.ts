@@ -1,4 +1,4 @@
-import type { Entry } from "./entries";
+import { EASY_MAX, HARD_MIN, effortOf, type Entry } from "./entries";
 import { CYCLE_WEEKS, WEEK_PERCENT, mround, planFor, type Exercise } from "./program";
 
 export type Tone = "plan" | "down" | "hold" | "up";
@@ -57,23 +57,25 @@ export function suggest(
     };
   }
 
-  if (last.feel === "hard") {
+  const effort = effortOf(last);
+
+  if (effort !== undefined && effort >= HARD_MIN) {
     return {
       ...base,
       weight: weighted ? Math.min(base.weight, last.weight) : base.weight,
       sets: Math.min(base.sets, Math.max(last.sets, 2)),
       reps: Math.min(base.reps, last.reps),
       tone: "hold",
-      reason: "Было тяжело — повторяем прошлую нагрузку",
+      reason: `Сложность была ${effort}/10 — повторяем прошлую нагрузку`,
     };
   }
 
-  if (last.feel === "easy" && last.weight >= base.weight && plan.repsMax && last.reps >= plan.reps) {
+  if (effort !== undefined && effort <= EASY_MAX && last.weight >= base.weight && plan.repsMax && last.reps >= plan.reps) {
     return {
       ...base,
       reps: Math.min(plan.repsMax, last.reps + 2),
       tone: "up",
-      reason: "Было легко — добавляем повторы",
+      reason: `Сложность была ${effort}/10 — добавляем повторы`,
     };
   }
 

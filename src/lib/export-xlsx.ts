@@ -1,5 +1,5 @@
 import type { Borders, Fill, Font, Worksheet } from "exceljs";
-import { sortEntries, volume, type Entry } from "./entries";
+import { effortOf, sortEntries, volume, type Entry } from "./entries";
 import { num } from "./format";
 import { xlsxPalette as c } from "./palette";
 import { WEEK_PERCENT, exerciseById, exercises, planFor } from "./program";
@@ -99,7 +99,6 @@ const toExcelDate = (iso: string) => {
   return new Date(Date.UTC(y, m - 1, d));
 };
 
-const feelText = { easy: "Легко", ok: "Норм", hard: "Тяжело" } as const;
 
 export async function buildWorkbook(entries: Entry[], bases: Record<string, number> = {}) {
   const { default: ExcelJS } = await import("exceljs");
@@ -121,7 +120,7 @@ export async function buildWorkbook(entries: Entry[], bases: Record<string, numb
     { header: "Подходы", width: 10, numFmt: "0" },
     { header: "Повторы", width: 10, numFmt: "0" },
     { header: "Боль в спине", width: 13, numFmt: "0" },
-    { header: "Как пошло", width: 12 },
+    { header: "Сложность (0–10)", width: 16, numFmt: "0" },
     { header: "Объём, кг", width: 12, numFmt: "#,##0" },
     { header: "Заметки", width: 40 },
   ];
@@ -144,7 +143,7 @@ export async function buildWorkbook(entries: Entry[], bases: Record<string, numb
       e.sets,
       e.reps,
       e.pain ?? "",
-      e.feel ? feelText[e.feel] : "",
+      effortOf(e) ?? "",
       { formula: `D${r}*E${r}*F${r}`, result: volume(e) },
       e.notes,
     ];

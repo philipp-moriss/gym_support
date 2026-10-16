@@ -255,7 +255,7 @@ function ResetCard({ week }: { week: number }) {
       <div className="flex flex-col gap-1">
         <h2 className="display text-2xl">Сброс</h2>
         <p className="text-sm text-muted-foreground">
-          Начни заново с нужной недели: прошлые отметки (боль, «тяжело», «легко») перестанут влиять на веса. Дневник
+          Начни заново с нужной недели: прошлые отметки (боль и сложность) перестанут влиять на веса. Дневник
           сохранится.
         </p>
       </div>

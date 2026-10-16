@@ -54,7 +54,7 @@ export function Today() {
   const tonnage = todayEntries.reduce((s, e) => s + e.sets * e.reps * e.weight, 0);
   const showWorkout = gymToday || forced || todayEntries.length > 0;
 
-  function log(ex: Exercise, values: Pick<Entry, "weight" | "sets" | "reps" | "pain" | "feel" | "notes">) {
+  function log(ex: Exercise, values: Pick<Entry, "weight" | "sets" | "reps" | "pain" | "effort" | "notes">) {
     add({ ...values, date, week, exerciseId: ex.id, exercise: ex.name });
     // Следующее невыполненное раскрывается само
     const next = list.all.find((e) => e.id !== ex.id && !doneIds.has(e.id));

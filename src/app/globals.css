@@ -166,6 +166,10 @@
   background: linear-gradient(90deg, var(--matcha-cream), var(--buttery-yellow) 40%, var(--firecracker-red));
   outline: none;
 }
+/* Сложность: от неба через сирень к пурпурному — чтобы не путать с болью. */
+.effort-range {
+  background: linear-gradient(90deg, var(--sky), var(--lilac) 45%, var(--magenta-punch));
+}
 .pain-range::-webkit-slider-thumb {
   -webkit-appearance: none;
   width: 26px;

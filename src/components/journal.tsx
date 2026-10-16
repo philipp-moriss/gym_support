@@ -2,14 +2,13 @@
 
 import { Download, NotebookPen, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
-import { sortEntries, useEntries, useSettings, volume, type Entry } from "@/lib/entries";
+import { effortOf, sortEntries, useEntries, useSettings, volume, type Entry } from "@/lib/entries";
 import { downloadXlsx } from "@/lib/export-xlsx";
 import { formatDay, num, setsReps, weightText } from "@/lib/format";
 import { exerciseById, muscles } from "@/lib/program";
 import { PainDot } from "./exercise-card";
 import { Button, Card } from "./ui";
 
-const feelText = { easy: "легко", ok: "норм", hard: "тяжело" } as const;
 
 export function Journal() {
   const { entries, remove } = useEntries();
@@ -82,7 +81,7 @@ export function Journal() {
                         <span className="font-mono text-sm text-muted-foreground">
                           {(!ex || ex.step > 0) && `${weightText(e.weight)} · `}
                           {ex ? setsReps(ex, e.sets, e.reps) : `${e.sets} × ${e.reps}`}
-                          {e.feel && ` · ${feelText[e.feel]}`}
+                          {effortOf(e) !== undefined && ` · сложн. ${effortOf(e)}/10`}
                         </span>
                         {e.notes && <span className="text-sm text-muted-foreground">{e.notes}</span>}
                       </div>
