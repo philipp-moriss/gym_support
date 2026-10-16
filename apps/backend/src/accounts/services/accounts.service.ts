@@ -109,12 +109,6 @@ export class AccountsService implements Accounts {
     return { ok: true, ...(await this.replaceCode(account)) };
   }
 
-  async upgradeCode(id: string) {
-    const account = await this.accounts.findOneBy({ id });
-    if (!account || account.codeLookup) return null;
-    return this.replaceCode(account);
-  }
-
   /** Новый 8-значный уникальный код; все выданные токены перестают работать. */
   private async replaceCode(account: Account) {
     // Новый код всегда 8-значный и уникальный: после смены можно входить без логина.

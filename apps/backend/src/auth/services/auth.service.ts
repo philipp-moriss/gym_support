@@ -1,5 +1,4 @@
 import {
-  ConflictException,
   ForbiddenException,
   HttpException,
   HttpStatus,
@@ -88,16 +87,6 @@ export class AuthService {
     }
     if (change.reason === 'locked') throw tooManyAttempts(change.retryAfterSec);
     throw new ForbiddenException('Invalid code');
-  }
-
-  /** Старый аккаунт переходит на вход одним кодом: новый код и новая пара токенов. */
-  async upgradeCode(current: AuthUser, userAgent?: string) {
-    const upgraded = await this.accounts.upgradeCode(current.id);
-    if (!upgraded) throw new ConflictException('Code is already 8 digits');
-    return {
-      ...(await this.issue(upgraded.account, userAgent)),
-      code: upgraded.code,
-    };
   }
 
   async refresh(refreshToken: string, userAgent?: string) {

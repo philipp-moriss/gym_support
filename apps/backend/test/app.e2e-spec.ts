@@ -200,7 +200,7 @@ describe('journal flow (e2e)', () => {
     expect(created.body.id).toMatch(/^c-/);
   });
 
-  it('вход одним кодом; старый 6-значный аккаунт переводится на 8 цифр', async () => {
+  it('вход одним кодом; старый 6-значный аккаунт входит по логину, сменой кода — по одному коду', async () => {
     const http = request(app.getHttpServer());
     const reg = (
       await http.post('/api/auth/register').send({ template: 'empty' })
@@ -233,20 +233,16 @@ describe('journal flow (e2e)', () => {
       .send({ code: reg.code })
       .expect(401);
 
-    const auth = { Authorization: `Bearer ${relogin.body.accessToken}` };
-    const upgraded = await http
-      .post('/api/auth/code/upgrade')
-      .set(auth)
+    // Переход на вход одним кодом — сменой кода.
+    const changed = await http
+      .post('/api/auth/code')
+      .set({ Authorization: `Bearer ${relogin.body.accessToken}` })
+      .send({ currentCode: reg.code })
       .expect(200);
-    expect(upgraded.body.code).toMatch(/^\d{8}$/);
-    expect(upgraded.body.user.codeDigits).toBe(8);
-    await http
-      .post('/api/auth/code/upgrade')
-      .set({ Authorization: `Bearer ${upgraded.body.accessToken}` })
-      .expect(409);
+    expect(changed.body.user.codeDigits).toBe(8);
     await http
       .post('/api/auth/login/code')
-      .send({ code: upgraded.body.code })
+      .send({ code: changed.body.code })
       .expect(200);
   });
 });

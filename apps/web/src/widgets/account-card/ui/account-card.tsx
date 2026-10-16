@@ -8,8 +8,8 @@ import { routes } from '@/shared/config'
 import { Button, Card } from '@/shared/ui'
 
 /**
- * Кто вошёл, смена кода и выход. Логин запомнен на устройстве: вход обратно —
- * сразу по коду.
+ * Кто вошёл, смена кода и выход. Устройство помнит аккаунт: вход обратно —
+ * сразу экран кода.
  */
 export function AccountCard() {
   const { data: me } = useMe()
@@ -30,6 +30,12 @@ export function AccountCard() {
         >
           {me.login}
         </span>
+        {me.codeDigits === 6 && (
+          <span className="text-sm text-muted-foreground">
+            Входишь по логину и коду. Смени код — и будешь входить одним кодом
+            из 8 цифр.
+          </span>
+        )}
       </div>
       <div className="flex flex-wrap gap-2">
         <Button variant="outline" size="sm" onClick={() => setChanging(true)}>

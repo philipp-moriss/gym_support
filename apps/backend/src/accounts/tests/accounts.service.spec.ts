@@ -191,25 +191,22 @@ describe('AccountsService: вход одним кодом', () => {
     service = new AccountsService(fakeRepo(account), config);
   });
 
-  it('старый 6-значный аккаунт без логина не находится, после перевода — находится', async () => {
+  it('старый 6-значный аккаунт входит только с логином, после смены кода — одним кодом', async () => {
     await expect(service.findByCode('12345600')).resolves.toEqual({
       ok: false,
       reason: 'invalid',
     });
-    const upgraded = await service.upgradeCode('a1');
-    if (!upgraded) throw new Error('expected upgrade');
-    expect(upgraded.code).toMatch(/^\d{8}$/);
-    expect(upgraded.account).toMatchObject({
-      codeDigits: 8,
-      sessionsVersion: 1,
-    });
+    await expect(
+      service.verifyCode('otter-4821', '123456'),
+    ).resolves.toMatchObject({ ok: true, account: { codeDigits: 6 } });
+
+    const changed = await service.changeCode('a1', '123456');
+    if (!changed.ok) throw new Error('expected ok');
     expect(account.codeLookup).toMatch(/^[0-9a-f]{64}$/);
-    expect(account.codeLookup).not.toContain(upgraded.code);
-    await expect(service.findByCode(upgraded.code)).resolves.toMatchObject({
+    expect(account.codeLookup).not.toContain(changed.code);
+    await expect(service.findByCode(changed.code)).resolves.toMatchObject({
       ok: true,
-      account: { id: 'a1' },
+      account: { id: 'a1', codeDigits: 8 },
     });
-    // Повторно не переводится: код уже 8-значный.
-    await expect(service.upgradeCode('a1')).resolves.toBeNull();
   });
 });

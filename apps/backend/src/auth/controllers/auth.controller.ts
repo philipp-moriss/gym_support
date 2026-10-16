@@ -94,17 +94,6 @@ export class AuthController {
     return this.auth.changeCode(user, dto.currentCode, userAgent);
   }
 
-  /** Старый 6-значный код → 8-значный, чтобы входить без логина. Один раз. */
-  @ApiBearerAuth()
-  @Post('code/upgrade')
-  @HttpCode(200)
-  upgradeCode(
-    @CurrentUser() user: AuthUser,
-    @Headers('user-agent') userAgent?: string,
-  ) {
-    return this.auth.upgradeCode(user, userAgent);
-  }
-
   @ApiBearerAuth()
   @Get('me')
   me(@CurrentUser() user: AuthUser) {
