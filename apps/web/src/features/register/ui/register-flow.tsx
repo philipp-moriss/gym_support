@@ -1,5 +1,6 @@
-import { Check, ClipboardCopy, Dumbbell, Sparkles } from 'lucide-react'
+import { Dumbbell, Sparkles } from 'lucide-react'
 import { useState } from 'react'
+import { CredentialsCard } from '@/entities/session'
 import { cn } from '@/shared/lib'
 import { Button } from '@/shared/ui'
 import { useRegister, type ProgramTemplate } from '../model/use-register'
@@ -35,11 +36,9 @@ export function RegisterFlow({
   const [template, setTemplate] = useState<ProgramTemplate>('back')
   const register = useRegister()
   const [saved, setSaved] = useState(false)
-  const [copied, setCopied] = useState(false)
 
   if (register.data) {
     const { user, code } = register.data
-    const text = `Журнал тренировок\nЛогин: ${user.login}\nКод: ${code}`
     return (
       <div className="flex w-full max-w-sm flex-col gap-6">
         <div className="flex flex-col gap-3">
@@ -50,36 +49,7 @@ export function RegisterFlow({
             или сделай скриншот.
           </p>
         </div>
-        <div className="flex flex-col gap-4 rounded-md bg-card p-5 text-card-foreground">
-          <div className="flex flex-col gap-1">
-            <span className="mono-label text-muted-foreground">Логин</span>
-            <span className="display text-3xl" data-testid="new-login">
-              {user.login}
-            </span>
-          </div>
-          <div className="flex flex-col gap-1">
-            <span className="mono-label text-muted-foreground">Код</span>
-            <span
-              className="display font-mono text-5xl tracking-[0.18em]"
-              data-testid="new-code"
-            >
-              {code}
-            </span>
-          </div>
-          <Button
-            variant="outline"
-            size="sm"
-            className="self-start"
-            onClick={() => {
-              void navigator.clipboard
-                ?.writeText(text)
-                .then(() => setCopied(true))
-            }}
-          >
-            {copied ? <Check /> : <ClipboardCopy />}
-            {copied ? 'Скопировано' : 'Скопировать'}
-          </Button>
-        </div>
+        <CredentialsCard login={user.login} code={code} />
         <label className="flex cursor-pointer items-center gap-3 text-[15px]">
           <input
             type="checkbox"

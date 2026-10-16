@@ -26,3 +26,9 @@ export class RefreshDto {
   @Length(1, 200)
   refreshToken: string;
 }
+
+export class ChangeCodeDto {
+  @ApiProperty({ example: '042917' })
+  @Matches(/^\d{6}$/)
+  currentCode: string;
+}

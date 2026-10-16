@@ -10,7 +10,12 @@ import {
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import { CurrentUser, Public, type AuthUser } from '../../shared';
-import { CodeLoginDto, RefreshDto, RegisterDto } from '../dto/auth.dto';
+import {
+  ChangeCodeDto,
+  CodeLoginDto,
+  RefreshDto,
+  RegisterDto,
+} from '../dto/auth.dto';
 import { AuthService } from '../services/auth.service';
 
 @ApiTags('auth')
@@ -52,6 +57,22 @@ export class AuthController {
   @HttpCode(204)
   logout(@Body() dto: RefreshDto) {
     return this.auth.logout(dto.refreshToken);
+  }
+
+  /**
+   * Новый код вместо текущего: тот же лимит попыток, что и при входе. Все
+   * прежние сессии закрываются; в ответе новая пара токенов и код (один раз).
+   */
+  @ApiBearerAuth()
+  @UseGuards(ThrottlerGuard)
+  @Post('code')
+  @HttpCode(200)
+  changeCode(
+    @CurrentUser() user: AuthUser,
+    @Body() dto: ChangeCodeDto,
+    @Headers('user-agent') userAgent?: string,
+  ) {
+    return this.auth.changeCode(user, dto.currentCode, userAgent);
   }
 
   @ApiBearerAuth()

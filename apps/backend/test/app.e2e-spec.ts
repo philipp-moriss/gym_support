@@ -74,6 +74,63 @@ describe('journal flow (e2e)', () => {
     expect(entries.body[0]).toMatchObject({ exerciseId: 'bench', weight: 30 });
   });
 
+  it('change code: wrong current code is 403, new code works, old tokens and code do not', async () => {
+    const http = request(app.getHttpServer());
+    const reg = (
+      await http.post('/api/auth/register').send({ template: 'empty' })
+    ).body;
+    const auth = { Authorization: `Bearer ${reg.accessToken}` };
+    const wrong = reg.code === '000000' ? '111111' : '000000';
+
+    await http
+      .post('/api/auth/code')
+      .send({ currentCode: reg.code })
+      .expect(401);
+    await http
+      .post('/api/auth/code')
+      .set(auth)
+      .send({ currentCode: '12' })
+      .expect(400);
+    await http
+      .post('/api/auth/code')
+      .set(auth)
+      .send({ currentCode: wrong })
+      .expect(403);
+    // Неверный код не трогает сессию.
+    await http.get('/api/auth/me').set(auth).expect(200);
+
+    const changed = await http
+      .post('/api/auth/code')
+      .set(auth)
+      .send({ currentCode: reg.code })
+      .expect(200);
+    const { code, accessToken, refreshToken, user } = changed.body;
+    expect(code).toMatch(/^\d{6}$/);
+    expect(user.login).toBe(reg.user.login);
+
+    await http.get('/api/auth/me').set(auth).expect(401);
+    await http
+      .post('/api/auth/refresh')
+      .send({ refreshToken: reg.refreshToken })
+      .expect(401);
+    await http
+      .get('/api/auth/me')
+      .set({ Authorization: `Bearer ${accessToken}` })
+      .expect(200);
+    await http.post('/api/auth/refresh').send({ refreshToken }).expect(200);
+
+    if (code !== reg.code) {
+      await http
+        .post('/api/auth/login')
+        .send({ login: user.login, code: reg.code })
+        .expect(401);
+    }
+    await http
+      .post('/api/auth/login')
+      .send({ login: user.login, code })
+      .expect(200);
+  });
+
   it('import skips duplicates; data is per account', async () => {
     const http = request(app.getHttpServer());
     const a = (

@@ -12,6 +12,11 @@ export type CodeCheck =
   | { ok: false; reason: 'invalid' }
   | { ok: false; reason: 'locked'; retryAfterSec: number };
 
+/** Смена кода: при успехе новый код в открытом виде — показывается один раз. */
+export type CodeChange =
+  | { ok: true; account: AccountRecord; code: string }
+  | Exclude<CodeCheck, { ok: true }>;
+
 export const ACCOUNTS = Symbol('ACCOUNTS');
 
 export interface Accounts {
@@ -19,5 +24,10 @@ export interface Accounts {
   create(): Promise<{ account: AccountRecord; code: string }>;
   /** Проверка кода с ограничением попыток. Неизвестный логин — тот же 'invalid'. */
   verifyCode(login: string, code: string): Promise<CodeCheck>;
+  /**
+   * Новый код после проверки текущего (тот же лимит попыток, что и при входе).
+   * sessionsVersion растёт: все выданные токены перестают работать.
+   */
+  changeCode(id: string, currentCode: string): Promise<CodeChange>;
   findById(id: string): Promise<AccountRecord | null>;
 }

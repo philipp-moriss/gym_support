@@ -1,4 +1,5 @@
 import {
+  ForbiddenException,
   HttpException,
   HttpStatus,
   Inject,
@@ -30,6 +31,12 @@ export const toMe = ({ id, login, createdAt }: AccountRecord) => ({
   createdAt,
 });
 
+const tooManyAttempts = (retryAfterSec: number) =>
+  new HttpException(
+    { statusCode: 429, message: 'Too many attempts', retryAfterSec },
+    HttpStatus.TOO_MANY_REQUESTS,
+  );
+
 /**
  * Регистрация и вход. Ошибка неверного кода всегда одна и та же, чтобы не
  * подсказывать, существует ли логин; блокировка отвечает 429 со сроком.
@@ -52,17 +59,25 @@ export class AuthService {
   async loginWithCode(login: string, code: string, userAgent?: string) {
     const check = await this.accounts.verifyCode(login, code);
     if (check.ok) return this.issue(check.account, userAgent);
-    if (check.reason === 'locked') {
-      throw new HttpException(
-        {
-          statusCode: 429,
-          message: 'Too many attempts',
-          retryAfterSec: check.retryAfterSec,
-        },
-        HttpStatus.TOO_MANY_REQUESTS,
-      );
-    }
+    if (check.reason === 'locked') throw tooManyAttempts(check.retryAfterSec);
     throw new UnauthorizedException('Invalid login or code');
+  }
+
+  /**
+   * Смена кода вошедшим пользователем. Неверный текущий код — 403, а не 401:
+   * токен при этом в порядке, клиенту не нужно его обновлять и повторять запрос.
+   * Старые токены (и этого устройства) больше не работают — отдаём новую пару.
+   */
+  async changeCode(current: AuthUser, currentCode: string, userAgent?: string) {
+    const change = await this.accounts.changeCode(current.id, currentCode);
+    if (change.ok) {
+      return {
+        ...(await this.issue(change.account, userAgent)),
+        code: change.code,
+      };
+    }
+    if (change.reason === 'locked') throw tooManyAttempts(change.retryAfterSec);
+    throw new ForbiddenException('Invalid code');
   }
 
   async refresh(refreshToken: string, userAgent?: string) {

@@ -2,7 +2,12 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { QueryFailedError, Repository } from 'typeorm';
-import type { AccountRecord, Accounts, CodeCheck } from '../../shared';
+import type {
+  AccountRecord,
+  Accounts,
+  CodeChange,
+  CodeCheck,
+} from '../../shared';
 import { Account } from '../entities/account.entity';
 import {
   generateCode,
@@ -63,7 +68,30 @@ export class AccountsService implements Accounts {
       login: normalizeLogin(login),
     });
     if (!account) return { ok: false, reason: 'invalid' };
+    return this.check(account, code);
+  }
 
+  async changeCode(id: string, currentCode: string): Promise<CodeChange> {
+    const account = await this.accounts.findOneBy({ id });
+    if (!account) return { ok: false, reason: 'invalid' };
+    const check = await this.check(account, currentCode);
+    if (!check.ok) return check;
+
+    const code = generateCode();
+    const codeHash = await hashCode(code, this.pepper);
+    // Версия растёт атомарно: параллельные смены не выдадут одинаковую версию.
+    const rows: unknown = await this.accounts.query(
+      `UPDATE accounts SET "codeHash" = $2, "sessionsVersion" = "sessionsVersion" + 1, "failedAttempts" = 0, "lockedUntil" = NULL, "updatedAt" = now() WHERE id = $1 RETURNING "sessionsVersion"`,
+      [account.id, codeHash],
+    );
+    const sessionsVersion = (
+      rows as [[{ sessionsVersion: number }], number]
+    )[0][0].sessionsVersion;
+    return { ok: true, account: { ...check.account, sessionsVersion }, code };
+  }
+
+  /** Проверка кода с лимитом попыток: общий счётчик для входа и смены кода. */
+  private async check(account: Account, code: string): Promise<CodeCheck> {
     const now = Date.now();
     if (account.lockedUntil && account.lockedUntil.getTime() > now) {
       return {
