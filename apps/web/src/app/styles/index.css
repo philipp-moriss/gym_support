@@ -102,6 +102,19 @@
     /* Установленное приложение на iPhone: контент не уходит под часы и чёлку. */
     padding-top: env(safe-area-inset-top);
     overscroll-behavior-y: none;
+    /* Страница никогда не ездит вбок, даже если что-то оказалось шире экрана. */
+    overflow-x: clip;
+  }
+  /* Установленное приложение на iPhone: статус-бар прозрачный, под часы
+     и значки при прокрутке заезжали карточки — закрываем полосу цветом сцены. */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0 0 auto;
+    height: env(safe-area-inset-top);
+    background: var(--background);
+    z-index: 40;
+    pointer-events: none;
   }
   ::selection {
     background: var(--hi-vis-yellow);

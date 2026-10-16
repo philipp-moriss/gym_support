@@ -214,10 +214,12 @@ export function Workout({
             doneCount > 0 &&
             doneCount < list.all.length && (
               <Button
-                className="self-center"
+                className="max-w-full self-center"
                 onClick={() => setOpenId(firstUndone)}
               >
-                Дальше: {exerciseById.get(firstUndone)?.short}
+                <span className="truncate">
+                  Дальше: {exerciseById.get(firstUndone)?.short}
+                </span>
               </Button>
             )}
         </>

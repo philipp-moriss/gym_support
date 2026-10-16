@@ -276,11 +276,11 @@ function Details({
             <Button
               variant="outline"
               size="sm"
-              className="mt-1 self-start"
+              className="mt-1 max-w-full self-start"
               onClick={swap.onSwap}
             >
               <Repeat2 />
-              {swap.label}
+              <span className="truncate">{swap.label}</span>
             </Button>
           )}
         </section>
