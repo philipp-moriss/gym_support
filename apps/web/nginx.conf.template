@@ -12,6 +12,12 @@ server {
     add_header Cache-Control "public, immutable";
   }
 
+  # Манифест PWA: у nginx нет типа для .webmanifest.
+  location = /manifest.webmanifest {
+    default_type application/manifest+json;
+    add_header Cache-Control "no-cache";
+  }
+
   # SPA: все маршруты отдают index.html, его не кэшируем.
   location / {
     try_files $uri /index.html;
