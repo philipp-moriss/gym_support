@@ -1,6 +1,6 @@
 import { Delete } from 'lucide-react'
 import { useEffect } from 'react'
-import { cn } from '@/shared/lib'
+import { cn, haptic } from '@/shared/lib'
 
 const KEYS = [
   ['1', ''],
@@ -34,10 +34,14 @@ export function PinPad({
   disabled?: boolean
 }) {
   const press = (digit: string) => {
-    if (!disabled && value.length < length) onChange(value + digit)
+    if (disabled || value.length >= length) return
+    haptic()
+    onChange(value + digit)
   }
   const erase = () => {
-    if (!disabled) onChange(value.slice(0, -1))
+    if (disabled || !value) return
+    haptic()
+    onChange(value.slice(0, -1))
   }
 
   useEffect(() => {
@@ -51,7 +55,7 @@ export function PinPad({
   })
 
   useEffect(() => {
-    if (shakeKey) navigator.vibrate?.(180)
+    if (shakeKey) haptic('error')
   }, [shakeKey])
 
   return (
