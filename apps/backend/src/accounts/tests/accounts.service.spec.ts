@@ -65,6 +65,10 @@ const makeAccount = async (): Promise<Account> => ({
   failedAttempts: 0,
   lockedUntil: null,
   sessionsVersion: 0,
+  role: 'client',
+  name: null,
+  disabled: false,
+  aiDailyLimit: null,
   createdAt: new Date(),
   updatedAt: new Date(),
 });

@@ -11,7 +11,7 @@ import {
   Put,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { CurrentUser, type AuthUser } from '../../shared';
+import { CoachAccess, CurrentUser, type AuthUser } from '../../shared';
 import {
   CreateEntryDto,
   DraftsDto,
@@ -30,7 +30,8 @@ export class JournalController {
     private drafts: DraftsService,
   ) {}
 
-  /** Все записи, новые сверху. */
+  /** Все записи, новые сверху. Тренер может читать дневник своего клиента. */
+  @CoachAccess('read')
   @Get('entries')
   list(@CurrentUser() user: AuthUser) {
     return this.entries.list(user.id);

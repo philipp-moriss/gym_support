@@ -5,6 +5,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AccountsModule } from '../accounts';
+import { CoachingModule } from '../coaching';
 import { ProgramModule } from '../program';
 import { Session } from './entities/session.entity';
 import { SessionsService } from './services/sessions.service';
@@ -46,6 +47,7 @@ import { AuthController } from './controllers/auth.controller';
     }),
     AccountsModule,
     ProgramModule,
+    CoachingModule,
   ],
   controllers: [AuthController],
   providers: [

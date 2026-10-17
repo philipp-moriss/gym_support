@@ -4,8 +4,8 @@
  */
 const MODULE = '^src/([^/]+)/';
 
-/** Инфраструктурные модули: не знают о домене. Пока их нет — дополнять по мере появления. */
-const INFRA = ['__none__'];
+/** Инфраструктурные модули: не знают о домене. */
+const INFRA = ['ai'];
 
 /** @type {import('dependency-cruiser').IConfiguration} */
 module.exports = {

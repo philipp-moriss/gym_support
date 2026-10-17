@@ -1,12 +1,14 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
-import { QueryFailedError, Repository } from 'typeorm';
+import { In, QueryFailedError, Repository } from 'typeorm';
 import type {
+  AccountPatch,
   AccountRecord,
   Accounts,
   CodeChange,
   CodeCheck,
+  Role,
 } from '../../shared';
 import { Account } from '../entities/account.entity';
 import {
@@ -24,12 +26,20 @@ export const LOCK_MINUTES = 15;
 const toRecord = ({
   id,
   login,
+  role,
+  name,
+  disabled,
+  aiDailyLimit,
   sessionsVersion,
   codeLookup,
   createdAt,
 }: Account): AccountRecord => ({
   id,
   login,
+  role,
+  name,
+  disabled,
+  aiDailyLimit,
   sessionsVersion,
   codeDigits: codeLookup ? 8 : 6,
   createdAt,
@@ -50,7 +60,10 @@ export class AccountsService implements Accounts {
     this.pepper = config.getOrThrow<string>('CODE_PEPPER');
   }
 
-  async create() {
+  async create({
+    role = 'client',
+    name = null,
+  }: { role?: Role; name?: string | null } = {}) {
     // Логин и код случайные и уникальные: при редком совпадении пробуем ещё раз.
     for (let attempt = 0; ; attempt++) {
       const { code, codeHash, codeLookup } = await this.newCode();
@@ -60,6 +73,8 @@ export class AccountsService implements Accounts {
             login: generateLogin(),
             codeHash,
             codeLookup,
+            role,
+            name: name?.trim() || null,
           }),
         );
         return { account: toRecord(account), code };
@@ -73,7 +88,7 @@ export class AccountsService implements Accounts {
     const account = await this.accounts.findOneBy({
       codeLookup: codeLookup(code, this.pepper),
     });
-    if (!account) return { ok: false, reason: 'invalid' };
+    if (!account || account.disabled) return { ok: false, reason: 'invalid' };
     if (account.lockedUntil && account.lockedUntil.getTime() > Date.now()) {
       return {
         ok: false,
@@ -97,7 +112,7 @@ export class AccountsService implements Accounts {
     const account = await this.accounts.findOneBy({
       login: normalizeLogin(login),
     });
-    if (!account) return { ok: false, reason: 'invalid' };
+    if (!account || account.disabled) return { ok: false, reason: 'invalid' };
     return this.check(account, code);
   }
 
@@ -107,6 +122,10 @@ export class AccountsService implements Accounts {
     const check = await this.check(account, currentCode);
     if (!check.ok) return check;
     return { ok: true, ...(await this.replaceCode(account)) };
+  }
+
+  async resetCode(id: string) {
+    return this.replaceCode(await this.getOrFail(id));
   }
 
   /** Новый 8-значный уникальный код; все выданные токены перестают работать. */
@@ -183,6 +202,34 @@ export class AccountsService implements Accounts {
   async findById(id: string) {
     const account = await this.accounts.findOneBy({ id });
     return account ? toRecord(account) : null;
+  }
+
+  async findByIds(ids: string[]) {
+    if (!ids.length) return [];
+    return (await this.accounts.findBy({ id: In(ids) })).map(toRecord);
+  }
+
+  async list(role: Role) {
+    const rows = await this.accounts.find({
+      where: { role },
+      order: { createdAt: 'DESC' },
+    });
+    return rows.map(toRecord);
+  }
+
+  async update(id: string, patch: AccountPatch) {
+    const account = await this.getOrFail(id);
+    if (patch.name !== undefined) account.name = patch.name?.trim() || null;
+    if (patch.disabled !== undefined) account.disabled = patch.disabled;
+    if (patch.aiDailyLimit !== undefined)
+      account.aiDailyLimit = patch.aiDailyLimit;
+    return toRecord(await this.accounts.save(account));
+  }
+
+  private async getOrFail(id: string) {
+    const account = await this.accounts.findOneBy({ id });
+    if (!account) throw new NotFoundException();
+    return account;
   }
 }
 

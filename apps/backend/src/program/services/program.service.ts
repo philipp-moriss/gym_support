@@ -5,16 +5,29 @@ import {
 } from '@nestjs/common';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 import { randomBytes } from 'crypto';
-import { DataSource, Repository } from 'typeorm';
-import type { ProgramSeeder, ProgramTemplate } from '../../shared';
+import { DataSource, EntityManager, IsNull, Repository } from 'typeorm';
+import type {
+  ExerciseChange,
+  ProgramAccess,
+  ProgramActor,
+  ProgramSeeder,
+  ProgramTemplate,
+} from '../../shared';
 import type {
   CreateExerciseDto,
   UpdateExerciseDto,
   UpdateSettingsDto,
 } from '../dto/program.dto';
 import { Exercise } from '../entities/exercise.entity';
+import { ProgramChange } from '../entities/program-change.entity';
 import { ProgramSettings } from '../entities/program-settings.entity';
 import { templates } from '../templates';
+import {
+  diffExercise,
+  diffSettings,
+  formatWeeks,
+  type FieldChange,
+} from './changes';
 
 /** Понедельник текущей недели по UTC: дальше клиент сдвигает старт сам. */
 const thisMonday = () => {
@@ -29,19 +42,30 @@ const view = ({
   updatedAt: _u,
   ...rest
 }: Exercise) => rest;
+const changeView = ({ userId: _userId, ...rest }: ProgramChange) => rest;
 const settingsView = ({
   userId: _userId,
   updatedAt: _u,
   ...rest
 }: ProgramSettings) => rest;
 
-/** Программа пользователя: упражнения, цикл, расписание и правила. */
+/** Правки пишутся в журнал, только когда программу меняет не владелец. */
+const foreign = (userId: string, actor?: ProgramActor): actor is ProgramActor =>
+  !!actor && actor.id !== userId;
+
+/**
+ * Программа пользователя: упражнения, цикл, расписание и правила. Методы
+ * изменения принимают `actor` — кто меняет, если не сам владелец (тренер):
+ * тогда разница до/после попадает в журнал правок `program_changes`.
+ */
 @Injectable()
-export class ProgramService implements ProgramSeeder {
+export class ProgramService implements ProgramSeeder, ProgramAccess {
   constructor(
     @InjectRepository(Exercise) private exercises: Repository<Exercise>,
     @InjectRepository(ProgramSettings)
     private settings: Repository<ProgramSettings>,
+    @InjectRepository(ProgramChange)
+    private changes: Repository<ProgramChange>,
     @InjectDataSource() private db: DataSource,
   ) {}
 
@@ -86,13 +110,30 @@ export class ProgramService implements ProgramSeeder {
     return { exercises: exercises.map(view), settings: settingsView(settings) };
   }
 
-  async updateSettings(userId: string, dto: UpdateSettingsDto) {
+  async updateSettings(
+    userId: string,
+    dto: UpdateSettingsDto,
+    actor?: ProgramActor,
+  ) {
     const current = await this.getSettings(userId);
     await this.settings.save({ ...current, ...dto });
-    return settingsView(await this.getSettings(userId));
+    const next = await this.getSettings(userId);
+    if (foreign(userId, actor))
+      await this.log(
+        this.db.manager,
+        userId,
+        actor,
+        null,
+        diffSettings(current, next),
+      );
+    return settingsView(next);
   }
 
-  async createExercise(userId: string, dto: CreateExerciseDto) {
+  async createExercise(
+    userId: string,
+    dto: CreateExerciseDto,
+    actor?: ProgramActor,
+  ) {
     this.assertPlan(dto);
     const max: { max: number | null } | undefined = await this.exercises
       .createQueryBuilder('e')
@@ -105,18 +146,37 @@ export class ProgramService implements ProgramSeeder {
       id: `c-${randomBytes(6).toString('base64url')}`,
       position: (max?.max ?? -1) + 1,
     });
-    return view(await this.exercises.save(exercise));
+    const saved = await this.exercises.save(exercise);
+    if (foreign(userId, actor))
+      await this.log(this.db.manager, userId, actor, saved, [
+        { field: 'added', before: null, after: describe(saved) },
+      ]);
+    return view(saved);
   }
 
-  async updateExercise(userId: string, id: string, dto: UpdateExerciseDto) {
+  async updateExercise(
+    userId: string,
+    id: string,
+    dto: UpdateExerciseDto,
+    actor?: ProgramActor,
+  ) {
     const exercise = await this.findExercise(userId, id);
     const next = { ...exercise, ...this.normalize({ ...exercise, ...dto }) };
     this.assertPlan(next);
-    return view(await this.exercises.save(next));
+    const saved = await this.exercises.save({ ...next });
+    if (foreign(userId, actor))
+      await this.log(
+        this.db.manager,
+        userId,
+        actor,
+        saved,
+        diffExercise(exercise, saved),
+      );
+    return view(saved);
   }
 
-  async deleteExercise(userId: string, id: string) {
-    await this.findExercise(userId, id);
+  async deleteExercise(userId: string, id: string, actor?: ProgramActor) {
+    const exercise = await this.findExercise(userId, id);
     await this.db.transaction(async (m) => {
       await m.delete(Exercise, { userId, id });
       // Альтернатива удалённого упражнения становится самостоятельной.
@@ -133,6 +193,10 @@ export class ProgramService implements ProgramSeeder {
     if (Object.keys(swaps).length !== Object.keys(settings.swaps).length) {
       await this.settings.update({ userId }, { swaps });
     }
+    if (foreign(userId, actor))
+      await this.log(this.db.manager, userId, actor, exercise, [
+        { field: 'removed', before: describe(exercise), after: null },
+      ]);
   }
 
   async reorder(userId: string, ids: string[]) {
@@ -144,7 +208,11 @@ export class ProgramService implements ProgramSeeder {
   }
 
   /** Новые «последние веса» разом: после цикла и при переносе из старой версии. */
-  async setBases(userId: string, bases: Record<string, number>) {
+  async setBases(
+    userId: string,
+    bases: Record<string, number>,
+    actor?: ProgramActor,
+  ) {
     await this.db.transaction(async (m) => {
       for (const [id, base] of Object.entries(bases)) {
         if (
@@ -155,6 +223,9 @@ export class ProgramService implements ProgramSeeder {
         ) {
           throw new BadRequestException(`Invalid base for ${id}`);
         }
+        const before = foreign(userId, actor)
+          ? await m.findOneBy(Exercise, { userId, id })
+          : null;
         await m
           .createQueryBuilder()
           .update(Exercise)
@@ -164,9 +235,108 @@ export class ProgramService implements ProgramSeeder {
             id,
           })
           .execute();
+        if (before && before.base !== null && foreign(userId, actor))
+          await this.log(
+            m,
+            userId,
+            actor,
+            before,
+            diffExercise(before, { ...before, base }),
+          );
       }
     });
     return this.get(userId);
+  }
+
+  /** Правки ИИ, выбранные тренером: всё в одной транзакции или ничего. */
+  async applyExerciseChanges(
+    userId: string,
+    changes: ExerciseChange[],
+    actor: ProgramActor,
+  ) {
+    await this.db.transaction(async (m) => {
+      for (const change of changes) {
+        const exercise = await m.findOneBy(Exercise, {
+          userId,
+          id: change.exerciseId,
+        });
+        const bad = (why: string) =>
+          new BadRequestException(`${change.exerciseId}: ${why}`);
+        if (!exercise) throw bad('exercise not found');
+        if (change.base !== undefined && exercise.base === null)
+          throw bad('exercise has no base weight');
+        if (change.weeks !== undefined && exercise.weeks === null)
+          throw bad('exercise has no weekly plan');
+        if (
+          change.base === undefined &&
+          change.step === undefined &&
+          change.weeks === undefined
+        )
+          throw bad('nothing to change');
+        const next: Exercise = {
+          ...exercise,
+          ...(change.base !== undefined && { base: change.base }),
+          ...(change.step !== undefined && { step: change.step }),
+          ...(change.weeks !== undefined && { weeks: change.weeks }),
+        };
+        await m.save(Exercise, next);
+        await this.log(
+          m,
+          userId,
+          { ...actor, reason: change.reason },
+          exercise,
+          diffExercise(exercise, next),
+        );
+      }
+    });
+    return this.get(userId);
+  }
+
+  async listChanges(userId: string, limit = 100) {
+    const rows = await this.changes.find({
+      where: { userId },
+      order: { createdAt: 'DESC' },
+      take: limit,
+    });
+    return rows.map(changeView);
+  }
+
+  async unseenChanges(userId: string) {
+    const rows = await this.changes.find({
+      where: { userId, seenAt: IsNull() },
+      order: { createdAt: 'DESC' },
+      take: 100,
+    });
+    return rows.map(changeView);
+  }
+
+  async markChangesSeen(userId: string) {
+    await this.changes.update(
+      { userId, seenAt: IsNull() },
+      { seenAt: new Date() },
+    );
+  }
+
+  private async log(
+    m: EntityManager,
+    userId: string,
+    actor: ProgramActor,
+    exercise: Pick<Exercise, 'id' | 'name'> | null,
+    fields: FieldChange[],
+  ) {
+    if (!fields.length) return;
+    await m.insert(
+      ProgramChange,
+      fields.map((f) => ({
+        ...f,
+        userId,
+        actorId: actor.id,
+        source: actor.source,
+        reason: actor.reason?.trim() || null,
+        exerciseId: exercise?.id ?? null,
+        exercise: exercise?.name ?? null,
+      })),
+    );
   }
 
   private async getSettings(userId: string) {
@@ -205,3 +375,7 @@ export class ProgramService implements ProgramSeeder {
     }
   }
 }
+
+/** Упражнение одной строкой для журнала правок: «3×12–15 · … » или «база 40 кг». */
+const describe = (e: Pick<Exercise, 'base' | 'weeks'>) =>
+  e.base !== null ? `рабочий вес ${Number(e.base)} кг` : formatWeeks(e.weeks);

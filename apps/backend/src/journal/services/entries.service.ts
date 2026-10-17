@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { MoreThanOrEqual, Repository } from 'typeorm';
+import type { JournalReader, JournalStats } from '../../shared';
 import type { CreateEntryDto, UpdateEntryDto } from '../dto/journal.dto';
 import { Entry } from '../entities/entry.entity';
 
@@ -34,9 +35,56 @@ const dedupeKey = (
     (e.notes ?? '').trim(),
   ].join('|');
 
+/** День `days` дней назад от `today` (YYYY-MM-DD). */
+const daysBefore = (today: string, days: number) => {
+  const d = new Date(`${today}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() - days);
+  return d.toISOString().slice(0, 10);
+};
+
 @Injectable()
-export class EntriesService {
+export class EntriesService implements JournalReader {
   constructor(@InjectRepository(Entry) private entries: Repository<Entry>) {}
+
+  async history(userId: string, since?: string) {
+    const rows = await this.entries.find({
+      where: { userId, ...(since && { date: MoreThanOrEqual(since) }) },
+      order: { date: 'ASC', createdAt: 'ASC' },
+    });
+    return rows.map(view);
+  }
+
+  async stats(userIds: string[], today: string): Promise<JournalStats[]> {
+    if (!userIds.length) return [];
+    const rows: {
+      userId: string;
+      lastWorkout: string | null;
+      workouts7d: string;
+      maxPain14d: number | null;
+    }[] = await this.entries
+      .createQueryBuilder('e')
+      .select('e.userId', 'userId')
+      .addSelect(`to_char(MAX(e.date), 'YYYY-MM-DD')`, 'lastWorkout')
+      .addSelect(
+        'COUNT(DISTINCT e.date) FILTER (WHERE e.date > :d7)',
+        'workouts7d',
+      )
+      .addSelect('MAX(e.pain) FILTER (WHERE e.date > :d14)', 'maxPain14d')
+      .where('e.userId IN (:...userIds)', { userIds })
+      .setParameters({ d7: daysBefore(today, 7), d14: daysBefore(today, 14) })
+      .groupBy('e.userId')
+      .getRawMany();
+    const byUser = new Map(rows.map((r) => [r.userId, r]));
+    return userIds.map((userId) => {
+      const r = byUser.get(userId);
+      return {
+        userId,
+        lastWorkout: r?.lastWorkout ?? null,
+        workouts7d: Number(r?.workouts7d ?? 0),
+        maxPain14d: r?.maxPain14d ?? null,
+      };
+    });
+  }
 
   async list(userId: string) {
     const rows = await this.entries.find({

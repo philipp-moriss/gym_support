@@ -39,6 +39,12 @@ services:
       DATABASE_PASSWORD: gym
       JWT_SECRET: dev-jwt-secret-change-me
       CODE_PEPPER: dev-code-pepper-change-me
+      # Первый админ (apps/admin), создаётся при старте, если админов нет.
+      ADMIN_LOGIN: admin
+      ADMIN_PASSWORD: dev-admin-password
+      # ИИ-агент (ultra-ai): без них анализ сразу падает с понятной ошибкой.
+      AI_AGENT_INVOKE_URL: ${AI_AGENT_INVOKE_URL:-}
+      AI_AGENT_API_KEY: ${AI_AGENT_API_KEY:-}
     depends_on:
       postgres:
         condition: service_healthy

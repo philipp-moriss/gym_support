@@ -25,9 +25,18 @@ export interface AccessTokenPayload {
   ver: number;
 }
 
-export const toMe = ({ id, login, codeDigits, createdAt }: AccountRecord) => ({
+export const toMe = ({
   id,
   login,
+  role,
+  name,
+  codeDigits,
+  createdAt,
+}: AccountRecord) => ({
+  id,
+  login,
+  role,
+  name,
   codeDigits,
   createdAt,
 });
@@ -92,7 +101,11 @@ export class AuthService {
   async refresh(refreshToken: string, userAgent?: string) {
     const session = await this.sessions.consume(refreshToken);
     const account = await this.accounts.findById(session.userId);
-    if (!account || account.sessionsVersion !== session.userSessionsVersion) {
+    if (
+      !account ||
+      account.disabled ||
+      account.sessionsVersion !== session.userSessionsVersion
+    ) {
       throw new UnauthorizedException();
     }
     return this.issue(account, userAgent);

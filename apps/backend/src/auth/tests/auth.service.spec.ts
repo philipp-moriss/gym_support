@@ -8,11 +8,15 @@ describe('AuthService.changeCode', () => {
   const account: AccountRecord = {
     id: 'a1',
     login: 'otter-4821',
+    role: 'client',
+    name: null,
+    disabled: false,
+    aiDailyLimit: null,
     sessionsVersion: 3,
     codeDigits: 8,
     createdAt: new Date(),
   };
-  const user = { id: 'a1', login: 'otter-4821' };
+  const user = { id: 'a1', login: 'otter-4821', role: 'client' as const };
   let accounts: jest.Mocked<Pick<Accounts, 'changeCode'>>;
   let sessions: { create: jest.Mock };
   let jwt: { signAsync: jest.Mock };
@@ -42,6 +46,8 @@ describe('AuthService.changeCode', () => {
       user: {
         id: 'a1',
         login: 'otter-4821',
+        role: 'client',
+        name: null,
         codeDigits: 8,
         createdAt: account.createdAt,
       },

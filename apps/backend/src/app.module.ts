@@ -7,6 +7,9 @@ import { AccountsModule } from './accounts';
 import { ProgramModule } from './program';
 import { AuthModule } from './auth';
 import { JournalModule } from './journal';
+import { AiModule } from './ai';
+import { CoachingModule } from './coaching';
+import { AdminModule } from './admin';
 
 /** Composition root: единственное место, где модули связываются друг с другом. */
 @Module({
@@ -25,6 +28,9 @@ import { JournalModule } from './journal';
     ProgramModule,
     AuthModule,
     JournalModule,
+    AiModule,
+    CoachingModule,
+    AdminModule,
   ],
 })
 export class AppModule {}

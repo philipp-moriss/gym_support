@@ -9,7 +9,7 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { SkipThrottle, Throttle, ThrottlerGuard } from '@nestjs/throttler';
-import { CurrentUser, Public, type AuthUser } from '../../shared';
+import { CurrentUser, Public, Roles, type AuthUser } from '../../shared';
 import {
   ChangeCodeDto,
   CodeLoginDto,
@@ -20,6 +20,7 @@ import {
 import { AuthService } from '../services/auth.service';
 
 @ApiTags('auth')
+@Roles('client', 'coach')
 @Controller('auth')
 export class AuthController {
   constructor(private auth: AuthService) {}
