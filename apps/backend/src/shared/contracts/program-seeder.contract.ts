@@ -1,5 +1,10 @@
 /** С чего начинается программа нового аккаунта. */
-export const PROGRAM_TEMPLATES = ['back', 'empty'] as const;
+export const PROGRAM_TEMPLATES = [
+  'back',
+  'empty',
+  'upper-lower',
+  'full-body',
+] as const;
 export type ProgramTemplate = (typeof PROGRAM_TEMPLATES)[number];
 
 export const PROGRAM_SEEDER = Symbol('PROGRAM_SEEDER');

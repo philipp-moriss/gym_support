@@ -1,4 +1,4 @@
-import { Dumbbell, Sparkles } from 'lucide-react'
+import { Dumbbell, Shuffle, Sparkles, Zap } from 'lucide-react'
 import { useState } from 'react'
 import { CredentialsCard } from '@/entities/session'
 import { cn } from '@/shared/lib'
@@ -13,9 +13,21 @@ const templates: {
 }[] = [
   {
     id: 'back',
-    title: 'Готовая программа',
-    text: 'Для спины: 13 упражнений, веса растут сами по повторам и самочувствию, правила безопасности. Всё можно поменять.',
+    title: 'Для спины',
+    text: '13 упражнений без осевой нагрузки, правила безопасности. Веса растут сами по повторам и самочувствию.',
     icon: Dumbbell,
+  },
+  {
+    id: 'upper-lower',
+    title: 'Верх / низ, 4 дня',
+    text: 'Сплит: пн и чт — верх тела, вт и пт — ноги и ягодицы. 12 упражнений, 3×8–12 и 3×12–15.',
+    icon: Shuffle,
+  },
+  {
+    id: 'full-body',
+    title: 'Всё тело, 3 дня',
+    text: 'Пн, ср, пт: по упражнению на каждую группу мышц. Хороший старт для новичка.',
+    icon: Zap,
   },
   {
     id: 'empty',

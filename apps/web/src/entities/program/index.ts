@@ -31,7 +31,14 @@ export type {
   Settings,
   Unit,
   WeekPlan,
+  WorkoutType,
 } from './model/types'
-export { workoutFor } from './model/workout'
+export {
+  inWorkout,
+  nextInRotation,
+  scheduledWorkout,
+  workoutFor,
+  workoutOfEntries,
+} from './model/workout'
 export { ExerciseIcon } from './ui/exercise-icon'
 export { MuscleDot } from './ui/muscle-dot'

@@ -16,6 +16,7 @@ import {
   Max,
   MaxLength,
   Min,
+  ValidateIf,
   ValidateNested,
 } from 'class-validator';
 import { ISO_DATE } from '../../shared';
@@ -25,10 +26,14 @@ import {
   MUSCLES,
   UNITS,
   type DayPlan,
+  type WorkoutType,
   type Group,
   type Muscle,
   type Unit,
 } from '../program.types';
+
+/** id тренировки сплита: латиница, цифры, дефис. */
+const WORKOUT_ID = /^[a-z0-9-]{1,20}$/;
 
 export class WeekPlanDto {
   @IsInt() @Min(1) @Max(20) sets: number;
@@ -110,6 +115,16 @@ export class CreateExerciseDto {
   tips?: string[];
 
   @ApiPropertyOptional({
+    type: [String],
+    description: 'Тренировки сплита (id); пусто — во всех',
+  })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(7)
+  @Matches(WORKOUT_ID, { each: true })
+  workouts?: string[];
+
+  @ApiPropertyOptional({
     type: [Number],
     description: 'Дни недели 0–6 (0 — пн); пусто — все дни тренировок',
   })
@@ -140,6 +155,10 @@ export class BasesDto {
 
 export class DayPlanDto implements DayPlan {
   @IsIn(GYM_DAYS) gym: DayPlan['gym'];
+  @IsOptional()
+  @ValidateIf((_, v) => v !== null)
+  @Matches(WORKOUT_ID)
+  workout?: string | null;
   @IsString() @MaxLength(40) title: string;
   @IsArray()
   @ArrayMaxSize(5)
@@ -148,7 +167,20 @@ export class DayPlanDto implements DayPlan {
   extras: string[];
 }
 
+export class WorkoutTypeDto implements WorkoutType {
+  @Matches(WORKOUT_ID) id: string;
+  @IsString() @Length(1, 30) title: string;
+}
+
 export class UpdateSettingsDto {
+  @ApiPropertyOptional({ type: [WorkoutTypeDto] })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(7)
+  @ValidateNested({ each: true })
+  @Type(() => WorkoutTypeDto)
+  workouts?: WorkoutTypeDto[];
+
   @ApiPropertyOptional({ example: '2026-10-12' })
   @IsOptional()
   @Matches(ISO_DATE)

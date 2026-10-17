@@ -80,6 +80,7 @@ export class ProgramService implements ProgramSeeder, ProgramAccess {
         resetAt: null,
         schedule: t.schedule,
         rules: t.rules,
+        workouts: t.workouts,
       });
       if (t.exercises.length) {
         await m.insert(
@@ -90,8 +91,10 @@ export class ProgramService implements ProgramSeeder, ProgramAccess {
             position,
             perSide: e.perSide ?? false,
             base: e.base ?? null,
+            baseSetAt: e.base !== undefined ? new Date() : null,
             weeks: e.weeks ?? null,
             alternativeOf: e.alternativeOf ?? null,
+            workouts: e.workouts ?? [],
             days: [],
           })),
         );
@@ -388,6 +391,7 @@ export class ProgramService implements ProgramSeeder, ProgramAccess {
       alternativeOf: dto.alternativeOf || null,
       tips: (dto.tips ?? []).map((t) => t.trim()).filter(Boolean),
       days: [...new Set(dto.days ?? [])].sort(),
+      workouts: [...new Set(dto.workouts ?? [])],
     };
   }
 

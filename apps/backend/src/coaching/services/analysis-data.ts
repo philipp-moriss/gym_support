@@ -53,6 +53,7 @@ export function journalLines(entries: JournalEntryView[]) {
 }
 
 export function programLines({ exercises, settings }: ProgramView) {
+  const workoutTitle = new Map(settings.workouts.map((w) => [w.id, w.title]));
   const list = exercises.map((e) =>
     [
       `- ${e.id}: ${e.name}`,
@@ -64,6 +65,9 @@ export function programLines({ exercises, settings }: ProgramView) {
         : `weeks ${weeksText(e.weeks)}`,
       `step ${e.step}`,
       e.days.length ? `дни ${e.days.map((d) => DAYS[d]).join(',')}` : null,
+      e.workouts.length
+        ? `тренировка ${e.workouts.map((w) => workoutTitle.get(w) ?? w).join('/')}`
+        : null,
       e.alternativeOf ? `замена для ${e.alternativeOf}` : null,
     ]
       .filter(Boolean)
@@ -72,7 +76,7 @@ export function programLines({ exercises, settings }: ProgramView) {
   const schedule = settings.schedule
     .map(
       (d, i) =>
-        `${DAYS[i]}: ${d.gym === 'yes' ? 'зал' : d.gym === 'optional' ? 'по желанию' : 'отдых'}${d.title ? ` (${d.title})` : ''}`,
+        `${DAYS[i]}: ${d.gym === 'yes' ? 'зал' : d.gym === 'optional' ? 'по желанию' : 'отдых'}${d.title ? ` (${d.title})` : ''}${d.workout ? ` — ${workoutTitle.get(d.workout) ?? d.workout}` : ''}`,
     )
     .join(', ');
   return [

@@ -2,7 +2,8 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { meQuery, rememberAccount, type AuthResult } from '@/entities/session'
 import { api, session } from '@/shared/api'
 
-export type ProgramTemplate = 'back' | 'empty'
+/** Шаблоны программ бэкенда (PROGRAM_TEMPLATES). */
+export type ProgramTemplate = 'back' | 'upper-lower' | 'full-body' | 'empty'
 
 /** Регистрация: сервер выдаёт логин и код, код показываем один раз. */
 export function useRegister() {

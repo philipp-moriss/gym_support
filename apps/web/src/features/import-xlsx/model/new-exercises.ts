@@ -45,6 +45,7 @@ export function exerciseFromRows(
     targetSets: plan.sets,
     repsMin: 12,
     repsMax: 15,
+    workouts: [],
     weeks: best > 0 ? null : Array.from({ length: 4 }, () => ({ ...plan })),
     alternativeOf: null,
     tips: [],

@@ -17,10 +17,14 @@ import {
 } from '@/entities/entry'
 import {
   CYCLE_WEEKS,
+  nextInRotation,
   programWeek,
+  scheduledWorkout,
   workoutFor,
+  workoutOfEntries,
   type Exercise,
   type Program,
+  type WorkoutType,
 } from '@/entities/program'
 import { useLogEntry } from '@/features/log-entry'
 import { restTimer } from '@/features/rest-timer'
@@ -34,7 +38,7 @@ import {
   weekday,
   weekdayLong,
 } from '@/shared/lib'
-import { Button } from '@/shared/ui'
+import { Button, Chip } from '@/shared/ui'
 import { suggest } from '../model/suggest'
 import { ExerciseCard } from './exercise-card'
 
@@ -61,10 +65,31 @@ export function Workout({
   }
   const gymToday = day.gym === 'yes'
   const [forced, setForced] = useState(false)
+  // Тренировка сплита, выбранная вне расписания; null — по расписанию.
+  const [chosen, setChosen] = useState<string | null>(null)
   const exerciseById = new Map(exercises.map((e) => [e.id, e]))
-  const list = workoutFor(program, weekday(date))
-
   const todayEntries = entries.filter((e) => e.date === date)
+  const types = settings.workouts ?? []
+  const scheduled = scheduledWorkout(program, weekday(date))
+  // Уже тренировались вне расписания — после перезагрузки та же тренировка.
+  const fromEntries =
+    !scheduled && todayEntries.length
+      ? workoutOfEntries(
+          program,
+          todayEntries.map((e) => e.exerciseId ?? ''),
+        )
+      : null
+  const lastDay = sortEntries(entries).find((e) => e.date < date)?.date
+  const rotation = nextInRotation(
+    program,
+    entries.filter((e) => e.date === lastDay).map((e) => e.exerciseId ?? ''),
+  )
+  const offSchedule = chosen ?? fromEntries
+  const list =
+    types.length && !scheduled && (forced || offSchedule)
+      ? workoutFor(program, weekday(date), offSchedule ?? rotation)
+      : workoutFor(program, weekday(date))
+
   const doneIds = new Set(todayEntries.map((e) => e.exerciseId))
   const doneCount = list.all.filter((e) => doneIds.has(e.id)).length
   const firstUndone = list.all.find((e) => !doneIds.has(e.id))?.id ?? null
@@ -161,7 +186,8 @@ export function Workout({
       <header className="flex items-center justify-between gap-4">
         <div className="flex min-w-0 flex-col gap-3">
           <span className="mono-label text-stage-muted">
-            {formatDay(date, { weekday: undefined })} · {day.title}
+            {formatDay(date, { weekday: undefined })} ·{' '}
+            {showWorkout && list.workout ? list.workout.title : day.title}
             {day.extras.length > 0 && ` · ${day.extras.join(', ')}`}
           </span>
           <h1 className="display text-[clamp(1.9rem,8.8vw,3.75rem)] text-accent">
@@ -189,10 +215,30 @@ export function Workout({
         <RestDay
           title={day.title}
           optional={day.gym === 'optional'}
-          onTrain={() => setForced(true)}
+          workouts={types}
+          suggested={rotation}
+          onTrain={(id) => {
+            if (id) setChosen(id)
+            setForced(true)
+          }}
         />
       ) : (
         <>
+          {types.length > 1 && !scheduled && (
+            <div className="flex flex-wrap gap-2" aria-label="Тренировка">
+              {types.map((t) => (
+                <Chip
+                  key={t.id}
+                  active={list.workout?.id === t.id}
+                  className="border-stage-border text-bone-white"
+                  onClick={() => setChosen(t.id)}
+                >
+                  {t.title}
+                </Chip>
+              ))}
+            </div>
+          )}
+
           <Progress
             done={doneCount}
             total={list.all.length}
@@ -337,11 +383,15 @@ function Progress({
 function RestDay({
   title,
   optional,
+  workouts,
+  suggested,
   onTrain,
 }: {
   title: string
   optional: boolean
-  onTrain: () => void
+  workouts: WorkoutType[]
+  suggested: string | null
+  onTrain: (workout?: string) => void
 }) {
   const diving = title === 'Дайвинг'
   const Icon = diving ? Waves : CalendarHeart
@@ -364,9 +414,24 @@ function RestDay({
             : 'Восстановление — часть плана. Следующая тренировка подстроится под прошлые отметки.'}
         </p>
       </div>
-      <Button variant="outline" onClick={onTrain}>
-        {optional ? 'Потренироваться' : 'Всё равно потренироваться'}
-      </Button>
+      {workouts.length > 1 ? (
+        <div className="flex flex-wrap gap-2">
+          {workouts.map((w) => (
+            <Button
+              key={w.id}
+              variant={w.id === suggested ? 'ink' : 'outline'}
+              onClick={() => onTrain(w.id)}
+            >
+              {w.title}
+              {w.id === suggested && ' — по кругу'}
+            </Button>
+          ))}
+        </div>
+      ) : (
+        <Button variant="outline" onClick={() => onTrain()}>
+          {optional ? 'Потренироваться' : 'Всё равно потренироваться'}
+        </Button>
+      )}
     </div>
   )
 }

@@ -4,6 +4,13 @@ import { CredentialsCard } from '@/entities/session'
 import { Button, Card, Chip, Field, Input } from '@/shared/ui'
 import { useCreateClient, type ProgramTemplate } from '../model/use-clients'
 
+const templateChips: [ProgramTemplate, string][] = [
+  ['back', 'Для спины'],
+  ['upper-lower', 'Верх / низ, 4 дня'],
+  ['full-body', 'Всё тело, 3 дня'],
+  ['empty', 'С нуля'],
+]
+
 /** Новый клиент: имя и шаблон → карточка с кодом входа (показываем один раз). */
 export function NewClientFlow({ onClose }: { onClose: () => void }) {
   const [name, setName] = useState('')
@@ -53,18 +60,15 @@ export function NewClientFlow({ onClose }: { onClose: () => void }) {
         <div className="flex flex-col gap-2">
           <span className="mono-label text-muted-foreground">Программа</span>
           <div className="flex flex-wrap gap-2">
-            <Chip
-              active={template === 'back'}
-              onClick={() => setTemplate('back')}
-            >
-              Готовая для спины
-            </Chip>
-            <Chip
-              active={template === 'empty'}
-              onClick={() => setTemplate('empty')}
-            >
-              С нуля
-            </Chip>
+            {templateChips.map(([id, label]) => (
+              <Chip
+                key={id}
+                active={template === id}
+                onClick={() => setTemplate(id)}
+              >
+                {label}
+              </Chip>
+            ))}
           </div>
         </div>
         {create.isError && (

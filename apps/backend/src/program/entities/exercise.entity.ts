@@ -93,6 +93,10 @@ export class Exercise {
   @Column({ type: 'jsonb', default: () => "'[]'" })
   tips: string[];
 
+  /** Тренировки сплита (id из settings.workouts), где есть упражнение; пусто — во всех. */
+  @Column({ type: 'jsonb', default: () => "'[]'" })
+  workouts: string[];
+
   /** Дни недели (0 — пн), когда упражнение в тренировке; пусто — каждый день тренировки. */
   @Column({ type: 'jsonb', default: () => "'[]'" })
   days: number[];

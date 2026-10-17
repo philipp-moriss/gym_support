@@ -5,7 +5,7 @@ import {
   PrimaryColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import type { DayPlan } from '../program.types';
+import type { DayPlan, WorkoutType } from '../program.types';
 
 /** Цикл, расписание и правила пользователя: одна строка на аккаунт. */
 @Entity('program_settings')
@@ -35,6 +35,10 @@ export class ProgramSettings {
 
   @Column({ type: 'jsonb', default: () => "'[]'" })
   rules: string[];
+
+  /** Тренировки сплита: «Верх», «Низ». Пусто — без сплита, все упражнения в каждый день. */
+  @Column({ type: 'jsonb', default: () => "'[]'" })
+  workouts: WorkoutType[];
 
   @UpdateDateColumn({ type: 'timestamptz' })
   updatedAt: Date;

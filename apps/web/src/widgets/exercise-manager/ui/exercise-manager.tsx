@@ -77,6 +77,7 @@ export function ExerciseManager({
             <ExerciseForm
               initial={ex}
               others={exercises.filter((o) => o.id !== ex.id)}
+              workouts={settings.workouts}
               saving={update.isPending}
               onCancel={() => setEditing(null)}
               onSave={(input) =>
@@ -98,6 +99,10 @@ export function ExerciseManager({
             current={
               hasBase(ex) ? nextWorkout(ex, adaptive, today).weight : null
             }
+            workoutTitles={settings.workouts
+              .filter((w) => (ex.workouts ?? []).includes(w.id))
+              .map((w) => w.title)
+              .join(', ')}
             alternativeOf={
               ex.alternativeOf
                 ? exercises.find((o) => o.id === ex.alternativeOf)?.short
@@ -116,6 +121,7 @@ export function ExerciseManager({
           <h3 className="display text-xl">Новое упражнение</h3>
           <ExerciseForm
             others={exercises}
+            workouts={settings.workouts}
             saving={create.isPending}
             onCancel={() => setEditing(null)}
             onSave={(input) =>
@@ -141,6 +147,7 @@ function ExerciseRow({
   ex,
   shownWeek,
   current,
+  workoutTitles,
   alternativeOf,
   onBase,
   onEdit,
@@ -151,6 +158,8 @@ function ExerciseRow({
   shownWeek: number
   /** Вес следующей тренировки по формулам (с рабочим весом). */
   current: number | null
+  /** «Верх», «Низ» — в каких тренировках сплита. */
+  workoutTitles?: string
   alternativeOf?: string
   onBase: (base: number) => void
   onEdit: () => void
@@ -167,6 +176,7 @@ function ExerciseRow({
           <span className="truncate text-xs text-muted-foreground">
             {muscles[ex.muscle].label} ·{' '}
             {ex.group === 'main' ? 'основная часть' : 'в конце'}
+            {workoutTitles && ` · ${workoutTitles}`}
             {ex.days.length > 0 &&
               ` · ${ex.days.map((d) => weekdayShort[d]).join(', ')}`}
             {alternativeOf && ` · замена для «${alternativeOf}»`}

@@ -25,6 +25,7 @@ const exercise = (
   weeks: null,
   alternativeOf: null,
   tips: [],
+  workouts: [],
   days: [],
   ...patch,
 });

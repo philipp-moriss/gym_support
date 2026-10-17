@@ -7,6 +7,7 @@ import {
   type Muscle,
   type Unit,
   type WeekPlan,
+  type WorkoutType,
 } from '@/entities/program'
 import { cn, weekdayShort } from '@/shared/lib'
 import {
@@ -44,6 +45,7 @@ const blankExercise = (): ExerciseInput => ({
   weeks: null,
   alternativeOf: null,
   tips: [],
+  workouts: [],
   days: [],
 })
 
@@ -61,6 +63,7 @@ const toInput = ({
 export function ExerciseForm({
   initial,
   others,
+  workouts = [],
   saving,
   onSave,
   onCancel,
@@ -69,6 +72,8 @@ export function ExerciseForm({
   initial?: Exercise
   /** Остальные упражнения — для «Замена для». */
   others: Exercise[]
+  /** Тренировки сплита программы: «Верх», «Низ». */
+  workouts?: WorkoutType[]
   saving?: boolean
   onSave: (input: ExerciseInput) => void
   onCancel: () => void
@@ -304,9 +309,41 @@ export function ExerciseForm({
         </div>
       )}
 
+      {workouts.length > 0 && (
+        <Field
+          label="Тренировка"
+          hint="Ничего не выбрано — упражнение в каждой тренировке."
+        >
+          <div className="flex flex-wrap gap-1.5">
+            {workouts.map((w) => {
+              const on = (v.workouts ?? []).includes(w.id)
+              return (
+                <Chip
+                  key={w.id}
+                  active={on}
+                  onClick={() =>
+                    set({
+                      workouts: on
+                        ? v.workouts.filter((x) => x !== w.id)
+                        : [...(v.workouts ?? []), w.id],
+                    })
+                  }
+                >
+                  {w.title}
+                </Chip>
+              )
+            })}
+          </div>
+        </Field>
+      )}
+
       <Field
         label="Дни"
-        hint="Ничего не выбрано — упражнение в каждый день тренировки."
+        hint={
+          workouts.length
+            ? 'Обычно не нужно: дни задаются тренировками в расписании.'
+            : 'Ничего не выбрано — упражнение в каждый день тренировки.'
+        }
       >
         <div className="flex flex-wrap gap-1.5">
           {weekdayShort.map((d, i) => {

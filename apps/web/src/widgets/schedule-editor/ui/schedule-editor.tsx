@@ -1,6 +1,11 @@
-import { Check, Pencil } from 'lucide-react'
+import { Check, Pencil, Plus, X } from 'lucide-react'
 import { useState } from 'react'
-import { workoutFor, type DayPlan, type Program } from '@/entities/program'
+import {
+  workoutFor,
+  type DayPlan,
+  type Program,
+  type WorkoutType,
+} from '@/entities/program'
 import { useUpdateSettings } from '@/features/update-settings'
 import { cn, plural, todayIso, weekday, weekdayShort } from '@/shared/lib'
 import { Button, Card, Chip, Input } from '@/shared/ui'
@@ -23,16 +28,78 @@ const dayColor = (d: DayPlan) =>
 /** Неделя по дням: какие дни — тренировки. Свои названия и заметки на вечер. */
 export function ScheduleEditor({ program }: { program: Program }) {
   const { schedule } = program.settings
+  const workouts = program.settings.workouts ?? []
   const update = useUpdateSettings()
   const [draft, setDraft] = useState<DayPlan[] | null>(null)
+  const [types, setTypes] = useState<WorkoutType[]>(workouts)
   const today = weekday(todayIso())
+  const titleOf = new Map(workouts.map((w) => [w.id, w.title]))
 
   if (draft) {
     const setDay = (i: number, patch: Partial<DayPlan>) =>
       setDraft(draft.map((d, j) => (j === i ? { ...d, ...patch } : d)))
+    const named = types.filter((t) => t.title.trim())
     return (
       <Card>
         <h2 className="display text-2xl">Дни тренировок</h2>
+        <section className="flex flex-col gap-2 rounded-md bg-muted p-3">
+          <span className="mono-label text-muted-foreground">
+            Тренировки сплита
+          </span>
+          <p className="text-sm text-muted-foreground">
+            Например «Верх» и «Низ». Упражнения привязываются к тренировке, а
+            здесь — в какие дни какая. Пусто — без сплита.
+          </p>
+          {types.map((t, i) => (
+            <div key={t.id} className="flex gap-2">
+              <Input
+                className="h-9"
+                value={t.title}
+                maxLength={30}
+                aria-label={`Тренировка ${i + 1}`}
+                onChange={(e) =>
+                  setTypes(
+                    types.map((x, j) =>
+                      j === i ? { ...x, title: e.target.value } : x,
+                    ),
+                  )
+                }
+              />
+              <Button
+                variant="ghost"
+                size="icon"
+                className="size-9"
+                aria-label={`Убрать «${t.title}»`}
+                onClick={() => {
+                  setTypes(types.filter((_, j) => j !== i))
+                  setDraft(
+                    draft.map((d) =>
+                      d.workout === t.id ? { ...d, workout: null } : d,
+                    ),
+                  )
+                }}
+              >
+                <X />
+              </Button>
+            </div>
+          ))}
+          {types.length < 7 && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="self-start"
+              onClick={() =>
+                setTypes([
+                  ...types,
+                  { id: `w${Date.now().toString(36)}`, title: '' },
+                ])
+              }
+            >
+              <Plus />
+              Тренировка
+            </Button>
+          )}
+        </section>
         <div className="flex flex-col gap-3">
           {draft.map((d, i) => (
             <div
@@ -64,6 +131,31 @@ export function ScheduleEditor({ program }: { program: Program }) {
                   </Chip>
                 ))}
               </div>
+              {named.length > 0 && d.gym !== 'no' && (
+                <div className="flex flex-wrap gap-1.5 pl-9">
+                  {named.map((t) => (
+                    <Chip
+                      key={t.id}
+                      active={d.workout === t.id}
+                      className="h-8 px-3 text-xs"
+                      onClick={() =>
+                        setDay(i, {
+                          workout: d.workout === t.id ? null : t.id,
+                          // Название дня следует за тренировкой, своё не трогаем.
+                          title:
+                            Object.values(gymLabels).includes(d.title) ||
+                            d.title === 'Зал по желанию' ||
+                            types.some((x) => x.title === d.title)
+                              ? t.title
+                              : d.title,
+                        })
+                      }
+                    >
+                      {t.title}
+                    </Chip>
+                  ))}
+                </div>
+              )}
               <div className="grid grid-cols-2 gap-2 pl-9">
                 <Input
                   className="h-9"
@@ -94,9 +186,18 @@ export function ScheduleEditor({ program }: { program: Program }) {
           <Button
             variant="ink"
             onClick={() => {
+              const kept = types
+                .map((t) => ({ ...t, title: t.title.trim() }))
+                .filter((t) => t.title)
+              const ids = new Set(kept.map((t) => t.id))
               update.mutate({
+                workouts: kept,
                 schedule: draft.map((d) => ({
                   ...d,
+                  workout:
+                    d.gym !== 'no' && d.workout && ids.has(d.workout)
+                      ? d.workout
+                      : null,
                   title: d.title.trim() || gymLabels[d.gym],
                   extras: d.extras.map((x) => x.trim()).filter(Boolean),
                 })),
@@ -123,7 +224,10 @@ export function ScheduleEditor({ program }: { program: Program }) {
         <Button
           variant="outline"
           size="sm"
-          onClick={() => setDraft(schedule.map((d) => ({ ...d })))}
+          onClick={() => {
+            setTypes(workouts)
+            setDraft(schedule.map((d) => ({ ...d })))
+          }}
         >
           <Pencil />
           Изменить
@@ -146,6 +250,10 @@ export function ScheduleEditor({ program }: { program: Program }) {
               </span>
               <span className="text-sm leading-tight font-semibold sm:text-xs">
                 {d.title}
+                {d.workout &&
+                  titleOf.get(d.workout) &&
+                  titleOf.get(d.workout) !== d.title &&
+                  ` · ${titleOf.get(d.workout)}`}
               </span>
               {count > 0 && (
                 <span className="font-mono text-xs text-muted-foreground sm:text-[11px]">
@@ -166,7 +274,10 @@ export function ScheduleEditor({ program }: { program: Program }) {
       </div>
       <p className="text-sm text-muted-foreground">
         {gymDays} {plural(gymDays, ['тренировка', 'тренировки', 'тренировок'])}{' '}
-        в неделю. Упражнения можно привязать к своим дням в их настройках.
+        в неделю.{' '}
+        {workouts.length
+          ? `Сплит: ${workouts.map((w) => w.title).join(' / ')}. Упражнения привязываются к тренировке в их настройках.`
+          : 'Упражнения можно привязать к своим дням в их настройках.'}
       </p>
     </Card>
   )

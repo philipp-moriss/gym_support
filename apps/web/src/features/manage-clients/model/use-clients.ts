@@ -7,7 +7,8 @@ import {
 } from '@/entities/coaching'
 import { api } from '@/shared/api'
 
-export type ProgramTemplate = 'back' | 'empty'
+/** Шаблоны программ бэкенда (PROGRAM_TEMPLATES). */
+export type ProgramTemplate = 'back' | 'upper-lower' | 'full-body' | 'empty'
 
 /** Тренер заводит клиента: аккаунт с программой, код входа — в ответе один раз. */
 export function useCreateClient() {

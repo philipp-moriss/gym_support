@@ -1,4 +1,4 @@
-import type { DayPlan, WeekPlan } from '../program.types';
+import type { DayPlan, WeekPlan, WorkoutType } from '../program.types';
 
 /** Одна строка журнала правок: поле, было, стало (текстом для человека). */
 export interface FieldChange {
@@ -30,9 +30,11 @@ const formatDays = (days: number[] | null | undefined) =>
 
 const formatSchedule = (schedule: DayPlan[]) =>
   schedule
-    .map((d, i) =>
-      d.gym === 'yes' ? DAYS[i] : d.gym === 'optional' ? `${DAYS[i]}?` : null,
-    )
+    .map((d, i) => {
+      const name =
+        d.gym === 'yes' ? DAYS[i] : d.gym === 'optional' ? `${DAYS[i]}?` : null;
+      return name && d.workout ? `${name} ${d.workout}` : name;
+    })
     .filter(Boolean)
     .join(', ') || 'нет дней';
 
@@ -49,6 +51,7 @@ interface ExerciseLike {
   weeks: WeekPlan[] | null;
   days: number[];
   tips: string[];
+  workouts: string[];
   alternativeOf: string | null;
 }
 
@@ -78,6 +81,12 @@ export function diffExercise(
       before: formatDays(before.days),
       after: formatDays(after.days),
     });
+  if (!same(before.workouts, after.workouts))
+    out.push({
+      field: 'workouts',
+      before: before.workouts.join(', ') || 'все тренировки',
+      after: after.workouts.join(', ') || 'все тренировки',
+    });
   if (before.name !== after.name)
     out.push({ field: 'name', before: before.name, after: after.name });
   if (!same(before.tips, after.tips))
@@ -95,6 +104,7 @@ interface SettingsLike {
   swaps: Record<string, string>;
   schedule: DayPlan[];
   rules: string[];
+  workouts: WorkoutType[];
 }
 
 export function diffSettings(
@@ -125,6 +135,12 @@ export function diffSettings(
       field: 'schedule',
       before: formatSchedule(before.schedule),
       after: formatSchedule(after.schedule),
+    });
+  if (!same(before.workouts, after.workouts))
+    out.push({
+      field: 'workouts',
+      before: before.workouts.map((w) => w.title).join(', ') || null,
+      after: after.workouts.map((w) => w.title).join(', ') || null,
     });
   if (!same(before.rules, after.rules))
     out.push({

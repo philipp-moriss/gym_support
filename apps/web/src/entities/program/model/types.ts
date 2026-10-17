@@ -46,6 +46,8 @@ export interface Exercise {
   /** id упражнения, которое это заменяет */
   alternativeOf: string | null
   tips: string[]
+  /** Тренировки сплита (id из settings.workouts), где есть упражнение; пусто — во всех */
+  workouts: string[]
   /** Дни недели (0 — пн); пусто — каждый день тренировки */
   days: number[]
 }
@@ -57,6 +59,14 @@ export interface DayPlan {
   gym: 'yes' | 'optional' | 'no'
   title: string
   extras: string[]
+  /** Тренировка сплита в этот день (id из settings.workouts); нет — все упражнения */
+  workout?: string | null
+}
+
+/** Тренировка сплита: «Верх», «Низ», «Всё тело». */
+export interface WorkoutType {
+  id: string
+  title: string
 }
 
 export interface Settings {
@@ -68,6 +78,8 @@ export interface Settings {
   resetAt: string | null
   schedule: DayPlan[]
   rules: string[]
+  /** Тренировки сплита; пусто — без сплита */
+  workouts: WorkoutType[]
 }
 
 export interface Program {

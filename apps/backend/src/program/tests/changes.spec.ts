@@ -10,6 +10,7 @@ const base = {
   weeks: null,
   days: [],
   tips: [],
+  workouts: [],
   alternativeOf: null,
 };
 
@@ -50,6 +51,7 @@ describe('program change diff', () => {
       resetAt: null,
       swaps: {},
       rules: [],
+      workouts: [],
       schedule: [
         day('yes'),
         day('no'),

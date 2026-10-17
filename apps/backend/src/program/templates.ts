@@ -1,21 +1,12 @@
-import type { DayPlan, Group, Muscle, Unit, WeekPlan } from './program.types';
+import type {
+  DayPlan,
+  ExerciseTemplate,
+  ProgramTemplateData,
+  WeekPlan,
+} from './program.types';
+import { fullBody, upperLower } from './split-templates';
 
-export interface ExerciseTemplate {
-  id: string;
-  name: string;
-  short: string;
-  muscle: Muscle;
-  group: Group;
-  unit: Unit;
-  perSide?: boolean;
-  base?: number;
-  step: number;
-  weeks?: WeekPlan[];
-  alternativeOf?: string;
-  tips: string[];
-}
-
-const same = (plan: WeekPlan): WeekPlan[] =>
+export const same = (plan: WeekPlan): WeekPlan[] =>
   Array.from({ length: 4 }, () => ({ ...plan }));
 
 /**
@@ -272,11 +263,22 @@ export const defaultSchedule = (): DayPlan[] =>
       : { gym: 'no', title: 'Отдых', extras: [] },
   );
 
-export const templates = {
-  back: { exercises: backExercises, rules: backRules, schedule: backSchedule },
-  empty: {
-    exercises: [] as ExerciseTemplate[],
-    rules: [] as string[],
-    schedule: defaultSchedule(),
+export const templates: Record<
+  'back' | 'empty' | 'upper-lower' | 'full-body',
+  ProgramTemplateData
+> = {
+  back: {
+    exercises: backExercises,
+    rules: backRules,
+    schedule: backSchedule,
+    workouts: [],
   },
+  empty: {
+    exercises: [],
+    rules: [],
+    schedule: defaultSchedule(),
+    workouts: [],
+  },
+  'upper-lower': upperLower,
+  'full-body': fullBody,
 };

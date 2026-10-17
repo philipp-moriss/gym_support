@@ -30,6 +30,8 @@ export interface ProgramExerciseView {
   weeks: ProgramWeekPlan[] | null;
   alternativeOf: string | null;
   tips: string[];
+  /** Тренировки сплита, где есть упражнение; пусто — во всех. */
+  workouts: string[];
   days: number[];
 }
 
@@ -37,8 +39,14 @@ export interface ProgramSettingsView {
   startDate: string;
   swaps: Record<string, string>;
   resetAt: string | null;
-  schedule: { gym: string; title: string; extras: string[] }[];
+  schedule: {
+    gym: string;
+    title: string;
+    extras: string[];
+    workout?: string | null;
+  }[];
   rules: string[];
+  workouts: { id: string; title: string }[];
 }
 
 export interface ProgramView {

@@ -301,4 +301,34 @@ describe('journal flow (e2e)', () => {
       .send({ weight: 1 })
       .expect(404);
   });
+
+  it('split templates: upper/lower has workout types bound to days and exercises', async () => {
+    const http = request(app.getHttpServer());
+    const reg = await http
+      .post('/api/auth/register')
+      .send({ template: 'upper-lower' })
+      .expect(201);
+    const program = await http
+      .get('/api/program')
+      .set({ Authorization: `Bearer ${reg.body.accessToken}` })
+      .expect(200);
+    expect(program.body.settings.workouts).toEqual([
+      { id: 'upper', title: 'Верх' },
+      { id: 'lower', title: 'Низ' },
+    ]);
+    expect(
+      program.body.settings.schedule.map(
+        (d: { workout: string | null }) => d.workout,
+      ),
+    ).toEqual(['upper', 'lower', null, 'upper', 'lower', null, null]);
+    const bench = program.body.exercises.find(
+      (e: { id: string }) => e.id === 'ul-bench',
+    );
+    expect(bench).toMatchObject({
+      workouts: ['upper'],
+      targetSets: 3,
+      repsMin: 8,
+      repsMax: 12,
+    });
+  });
 });
