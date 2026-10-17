@@ -100,11 +100,10 @@ export function ExerciseCard({
   }
   // Слияние с defaults: черновик старого формата (без effort) не ломает форму
   const values: Draft = { ...defaults, ...draft }
+  // «Изменено» — только нагрузка: сложность, боль и заметка — отметки за сегодня, а не правка плана.
   const modified =
     !!draft &&
-    (Object.keys(defaults) as (keyof Draft)[]).some(
-      (k) => values[k] !== defaults[k],
-    )
+    (['weight', 'sets', 'reps'] as const).some((k) => values[k] !== defaults[k])
 
   // Раскрытую карточку подтягиваем в кадр, когда она открылась сама после «Сделано»
   useEffect(() => {
@@ -335,21 +334,6 @@ function Details({
               .join(', ')}
           </p>
         )}
-        {modified && (
-          <div className="pop-in flex flex-wrap items-center justify-between gap-2 rounded-md bg-[color-mix(in_srgb,var(--lilac)_45%,var(--bone-white))] p-2 pl-3">
-            <span className="text-sm">
-              Изменено вручную. По умолчанию:{' '}
-              <b className="font-mono whitespace-nowrap">
-                {ex.step > 0 && `${weightText(defaults.weight)} · `}
-                {setsReps(ex, defaults.sets, defaults.reps)}
-              </b>
-            </span>
-            <Button variant="outline" size="sm" onClick={onReset}>
-              <RotateCcw />
-              Вернуть по умолчанию
-            </Button>
-          </div>
-        )}
         <div
           className={clsx(
             'grid gap-3',
@@ -388,6 +372,21 @@ function Details({
             onChange={(v) => onChange({ reps: v })}
           />
         </div>
+        {modified && (
+          <div className="pop-in flex flex-wrap items-center justify-between gap-2 rounded-md bg-[color-mix(in_srgb,var(--lilac)_45%,var(--bone-white))] p-2 pl-3">
+            <span className="text-sm">
+              Изменено вручную. По умолчанию:{' '}
+              <b className="font-mono whitespace-nowrap">
+                {ex.step > 0 && `${weightText(defaults.weight)} · `}
+                {setsReps(ex, defaults.sets, defaults.reps)}
+              </b>
+            </span>
+            <Button variant="outline" size="sm" onClick={onReset}>
+              <RotateCcw />
+              Вернуть по умолчанию
+            </Button>
+          </div>
+        )}
 
         <SetTracker
           planned={sets}
