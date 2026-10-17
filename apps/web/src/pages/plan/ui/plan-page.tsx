@@ -1,6 +1,6 @@
 import { CalendarDays, RefreshCw, ShieldCheck } from 'lucide-react'
 import { CYCLE_WEEKS, programWeek } from '@/entities/program'
-import { routes } from '@/shared/config'
+import { useScopedRoutes } from '@/shared/config'
 import { fromIso, plural, todayIso } from '@/shared/lib'
 import { MenuLink, PageHeader, PageState } from '@/shared/ui'
 import { CyclePlan } from '@/widgets/cycle-plan'
@@ -10,6 +10,7 @@ import { usePlanData } from '../model/use-plan-data'
 /** «План»: неделя цикла и свои упражнения; настройки — на отдельных страницах. */
 export function PlanPage() {
   const { program, entries, ready, error, retry } = usePlanData()
+  const routes = useScopedRoutes()
   if (error) return <PageState error onRetry={retry} />
   if (!ready || !program) return <PageState />
   const { settings } = program
@@ -17,7 +18,11 @@ export function PlanPage() {
   const gymDays = settings.schedule.filter((d) => d.gym === 'yes').length
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader label={`Неделя ${week} из ${CYCLE_WEEKS}`} title="План" />
+      <PageHeader
+        label={`Неделя ${week} из ${CYCLE_WEEKS}`}
+        title="План"
+        back={routes.planBack}
+      />
       <CyclePlan program={program} entries={entries} compact />
       <ProgramOverview program={program} />
       <nav className="flex flex-col gap-2" aria-label="Настройки плана">

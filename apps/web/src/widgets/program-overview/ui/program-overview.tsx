@@ -11,13 +11,14 @@ import {
   type Exercise,
   type Program,
 } from '@/entities/program'
-import { routes } from '@/shared/config'
+import { useScopedRoutes } from '@/shared/config'
 import { num, todayIso, weekdayShort } from '@/shared/lib'
 import { Card } from '@/shared/ui'
 
 /** Упражнения программы только для чтения: что и с каким весом на этой неделе. */
 export function ProgramOverview({ program }: { program: Program }) {
   const { exercises, settings } = program
+  const routes = useScopedRoutes()
   const week = Math.min(
     programWeek(settings.startDate, todayIso()),
     CYCLE_WEEKS,
@@ -30,7 +31,9 @@ export function ProgramOverview({ program }: { program: Program }) {
     <Card className="gap-4">
       <div className="flex items-center justify-between gap-3">
         <div className="flex flex-col gap-1">
-          <h2 className="display text-2xl">Мои упражнения</h2>
+          <h2 className="display text-2xl">
+            {routes.clientId ? 'Упражнения' : 'Мои упражнения'}
+          </h2>
           <span className="mono-label text-muted-foreground">
             Веса {week}-й недели
           </span>

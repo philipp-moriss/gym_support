@@ -1,5 +1,8 @@
 import { createBrowserRouter, Navigate } from 'react-router'
 import { AwardsPage } from '@/pages/awards'
+import { CoachClientPage } from '@/pages/coach-client'
+import { CoachClientsPage } from '@/pages/coach-clients'
+import { CoachProfilePage } from '@/pages/coach-profile'
 import { JournalPage } from '@/pages/journal'
 import { LoginPage } from '@/pages/login'
 import {
@@ -11,9 +14,10 @@ import {
 } from '@/pages/plan'
 import { ProfilePage } from '@/pages/profile'
 import { TodayPage } from '@/pages/today'
-import { routes } from '@/shared/config'
+import { coachPaths, routes } from '@/shared/config'
 import { AppShell } from '@/widgets/app-shell'
-import { RequireAuth } from './guards'
+import { CoachShell } from '@/widgets/coach-shell'
+import { CoachClientScope, RequireAuth } from './guards'
 
 export const router = createBrowserRouter([
   { path: routes.login, element: <LoginPage /> },
@@ -38,6 +42,29 @@ export const router = createBrowserRouter([
             element: <Navigate to={routes.journal} replace />,
           },
           { path: '/awards', element: <Navigate to={routes.awards} replace /> },
+        ],
+      },
+      {
+        // Кабинет тренера: те же страницы «Плана» и «Дневника», но клиента.
+        element: <CoachShell />,
+        children: [
+          { path: routes.coach, element: <CoachClientsPage /> },
+          { path: routes.coachProfile, element: <CoachProfilePage /> },
+          {
+            element: <CoachClientScope />,
+            children: [
+              { path: coachPaths.client, element: <CoachClientPage /> },
+              { path: coachPaths.plan, element: <PlanPage /> },
+              {
+                path: coachPaths.planExercises,
+                element: <PlanExercisesPage />,
+              },
+              { path: coachPaths.planSchedule, element: <PlanSchedulePage /> },
+              { path: coachPaths.planCycle, element: <PlanCyclePage /> },
+              { path: coachPaths.planRules, element: <PlanRulesPage /> },
+              { path: coachPaths.journal, element: <JournalPage /> },
+            ],
+          },
         ],
       },
     ],

@@ -1,12 +1,13 @@
 import { useEntries } from '@/entities/entry'
 import { useProgram } from '@/entities/program'
-import { routes } from '@/shared/config'
+import { useScopedRoutes } from '@/shared/config'
 import { PageState } from '@/shared/ui'
 import { JournalList } from '@/widgets/journal-list'
 
 export function JournalPage() {
   const program = useProgram()
   const journal = useEntries()
+  const { clientId, journalBack } = useScopedRoutes()
   if ((program.isError && !program.data) || (journal.isError && !journal.data))
     return (
       <PageState
@@ -19,7 +20,8 @@ export function JournalPage() {
     <JournalList
       entries={journal.entries}
       exercises={program.data.exercises}
-      back={{ to: routes.profile, label: 'Профиль' }}
+      back={journalBack}
+      readOnly={!!clientId}
     />
   )
 }

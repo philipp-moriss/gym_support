@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { draftsQuery, useEntries } from '@/entities/entry'
 import { useProgram } from '@/entities/program'
 import { useMe } from '@/entities/session'
+import { CoachChangesCard } from '@/features/ack-changes'
 import { ImportXlsx } from '@/features/import-xlsx'
 import { LegacyImportCard } from '@/features/import-legacy'
 import { InstallCard } from '@/features/install-app'
@@ -40,6 +41,7 @@ export function TodayPage() {
       banner={
         me && (
           <>
+            <CoachChangesCard />
             <InstallCard dismissible />
             <LegacyImportCard
               userId={me.id}

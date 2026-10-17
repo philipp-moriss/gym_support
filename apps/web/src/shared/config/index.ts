@@ -1,2 +1,2 @@
 export { env } from './env'
-export { routes } from './routes'
+export { coachPaths, routes, useScopedRoutes } from './routes'

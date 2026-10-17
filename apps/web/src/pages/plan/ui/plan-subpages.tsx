@@ -1,4 +1,4 @@
-import { routes } from '@/shared/config'
+import { useScopedRoutes } from '@/shared/config'
 import { PageHeader, PageState } from '@/shared/ui'
 import { CyclePlan } from '@/widgets/cycle-plan'
 import { ExerciseManager } from '@/widgets/exercise-manager'
@@ -7,11 +7,15 @@ import { RulesCard } from '@/widgets/rules-card'
 import { ScheduleEditor } from '@/widgets/schedule-editor'
 import { usePlanData } from '../model/use-plan-data'
 
-const back = { to: routes.plan, label: 'План' }
+/** Ссылка «назад» к «Плану» — своему или клиента тренера. */
+function useBack() {
+  return { to: useScopedRoutes().plan, label: 'План' }
+}
 
 /** Режим правки упражнений: веса, подходы, дни, порядок, новые упражнения. */
 export function PlanExercisesPage() {
   const { program, ready, error, retry } = usePlanData()
+  const back = useBack()
   if (error) return <PageState error onRetry={retry} />
   if (!ready || !program) return <PageState />
   return (
@@ -24,6 +28,7 @@ export function PlanExercisesPage() {
 
 export function PlanSchedulePage() {
   const { program, ready, error, retry } = usePlanData()
+  const back = useBack()
   if (error) return <PageState error onRetry={retry} />
   if (!ready || !program) return <PageState />
   return (
@@ -36,19 +41,23 @@ export function PlanSchedulePage() {
 
 export function PlanCyclePage() {
   const { program, entries, ready, error, retry } = usePlanData()
+  const back = useBack()
+  const { clientId } = useScopedRoutes()
   if (error) return <PageState error onRetry={retry} />
   if (!ready || !program) return <PageState />
   return (
     <div className="flex flex-col gap-6">
       <PageHeader label="Цикл" title="Неделя и сброс" back={back} />
       <CyclePlan program={program} entries={entries} />
-      <ResetCard program={program} entries={entries} />
+      {/* Полный сброс стирает дневник — это решает только сам клиент. */}
+      {!clientId && <ResetCard program={program} entries={entries} />}
     </div>
   )
 }
 
 export function PlanRulesPage() {
   const { program, ready, error, retry } = usePlanData()
+  const back = useBack()
   if (error) return <PageState error onRetry={retry} />
   if (!ready || !program) return <PageState />
   return (

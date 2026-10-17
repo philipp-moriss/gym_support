@@ -1,9 +1,16 @@
 import { useQueryClient } from '@tanstack/react-query'
-import { useEffect, useLayoutEffect } from 'react'
-import { Navigate, Outlet, useLocation, useNavigate } from 'react-router'
-import { pendingEntries } from '@/entities/entry'
+import { useEffect, useLayoutEffect, useState } from 'react'
+import {
+  Navigate,
+  Outlet,
+  useLocation,
+  useNavigate,
+  useParams,
+} from 'react-router'
+import { entriesKey, pendingEntries } from '@/entities/entry'
+import { programKey } from '@/entities/program'
 import { useMe } from '@/entities/session'
-import { session } from '@/shared/api'
+import { actingAs, session } from '@/shared/api'
 import { routes } from '@/shared/config'
 import { PageState } from '@/shared/ui'
 
@@ -39,5 +46,41 @@ export function RequireAuth() {
       <Navigate to={routes.login} replace state={{ from: location.pathname }} />
     )
   if (!me) return <PageState />
+  // У тренера своего журнала нет — только кабинет; клиенту кабинет не нужен.
+  const inCoach = location.pathname.startsWith(routes.coach)
+  if (me.role === 'coach' && !inCoach)
+    return <Navigate to={routes.coach} replace />
+  if (me.role !== 'coach' && inCoach)
+    return <Navigate to={routes.today} replace />
+  return <Outlet />
+}
+
+/**
+ * Тренер открыл клиента: программа и дневник дальше грузятся от его имени.
+ * Кэш прежнего клиента выбрасываем, чтобы не мелькнули чужие данные; детей
+ * рисуем только после переключения.
+ */
+export function CoachClientScope() {
+  const { clientId = '' } = useParams()
+  const queryClient = useQueryClient()
+  const [active, setActive] = useState<string | null>(null)
+
+  useLayoutEffect(() => {
+    const drop = () => {
+      queryClient.removeQueries({ queryKey: programKey })
+      queryClient.removeQueries({ queryKey: entriesKey })
+    }
+    drop()
+    actingAs.set(clientId)
+    // Дети должны смонтироваться уже после переключения: их запросы стартуют в их эффектах.
+    // oxlint-disable-next-line react/set-state-in-effect
+    setActive(clientId)
+    return () => {
+      actingAs.set(null)
+      drop()
+    }
+  }, [clientId, queryClient])
+
+  if (active !== clientId) return <PageState />
   return <Outlet />
 }

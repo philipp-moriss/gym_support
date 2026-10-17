@@ -20,15 +20,20 @@ import { ImportXlsx } from '@/features/import-xlsx'
 import { formatDay, num } from '@/shared/lib'
 import { Button, Card, PageHeader } from '@/shared/ui'
 
-/** «Дневник»: все записи по дням, итоги, выгрузка и загрузка Excel. */
+/**
+ * «Дневник»: все записи по дням, итоги, выгрузка и загрузка Excel.
+ * `readOnly` — тренер смотрит дневник клиента: без правки, удаления и загрузки.
+ */
 export function JournalList({
   entries,
   exercises,
   back,
+  readOnly,
 }: {
   entries: Entry[]
   exercises: Exercise[]
   back?: { to: string; label: string }
+  readOnly?: boolean
 }) {
   const remove = useDeleteEntry().mutate
   const [editing, setEditing] = useState<string | null>(null)
@@ -68,13 +73,19 @@ export function JournalList({
       {groups.length === 0 ? (
         <div className="flex flex-col items-center gap-3 rounded-md border-2 border-dashed border-stage-border p-8 text-center text-stage-muted">
           <NotebookPen className="size-8" />
-          <p>
-            Пока пусто. Отметь упражнения на вкладке «Сегодня» — они появятся
-            здесь.
-          </p>
-          <p className="text-sm">
-            Есть прошлые тренировки в Excel? Загрузи файл ниже.
-          </p>
+          {readOnly ? (
+            <p>Клиент ещё ничего не записал.</p>
+          ) : (
+            <>
+              <p>
+                Пока пусто. Отметь упражнения на вкладке «Сегодня» — они
+                появятся здесь.
+              </p>
+              <p className="text-sm">
+                Есть прошлые тренировки в Excel? Загрузи файл ниже.
+              </p>
+            </>
+          )}
         </div>
       ) : (
         <section className="flex flex-col gap-4">
@@ -105,7 +116,7 @@ export function JournalList({
                           type="button"
                           className="flex min-w-0 flex-1 cursor-pointer flex-col gap-1 text-left"
                           aria-expanded={editing === e.id}
-                          disabled={e.id.startsWith('temp-')}
+                          disabled={readOnly || e.id.startsWith('temp-')}
                           onClick={() =>
                             setEditing(editing === e.id ? null : e.id)
                           }
@@ -114,7 +125,9 @@ export function JournalList({
                             <span className="truncate">
                               {ex?.short ?? e.exercise}
                             </span>
-                            <Pencil className="size-3.5 shrink-0 text-muted-foreground" />
+                            {!readOnly && (
+                              <Pencil className="size-3.5 shrink-0 text-muted-foreground" />
+                            )}
                           </span>
                           <span className="font-mono text-sm text-muted-foreground">
                             {(!ex || ex.step > 0) &&
@@ -139,15 +152,17 @@ export function JournalList({
                           )}
                         </button>
                         <PainDot pain={e.pain} />
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          aria-label={`Удалить «${e.exercise}»`}
-                          disabled={e.id.startsWith('temp-')}
-                          onClick={() => remove(e.id)}
-                        >
-                          <Trash2 />
-                        </Button>
+                        {!readOnly && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            aria-label={`Удалить «${e.exercise}»`}
+                            disabled={e.id.startsWith('temp-')}
+                            onClick={() => remove(e.id)}
+                          >
+                            <Trash2 />
+                          </Button>
+                        )}
                       </div>
                       {editing === e.id && (
                         <EntryEditForm
@@ -165,16 +180,18 @@ export function JournalList({
         </section>
       )}
 
-      <section className="flex flex-col gap-3 rounded-md bg-block p-4">
-        <div className="flex flex-col gap-1">
-          <h2 className="display text-2xl">Загрузить из Excel</h2>
-          <p className="text-sm text-stage-muted">
-            Лист «Дневник» из нашей выгрузки или из «План тренировок.xlsx».
-            Упражнения сопоставим с программой по названию, повторы пропустим.
-          </p>
-        </div>
-        <ImportXlsx exercises={exercises} />
-      </section>
+      {!readOnly && (
+        <section className="flex flex-col gap-3 rounded-md bg-block p-4">
+          <div className="flex flex-col gap-1">
+            <h2 className="display text-2xl">Загрузить из Excel</h2>
+            <p className="text-sm text-stage-muted">
+              Лист «Дневник» из нашей выгрузки или из «План тренировок.xlsx».
+              Упражнения сопоставим с программой по названию, повторы пропустим.
+            </p>
+          </div>
+          <ImportXlsx exercises={exercises} />
+        </section>
+      )}
     </div>
   )
 }

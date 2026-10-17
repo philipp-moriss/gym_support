@@ -1,4 +1,5 @@
 import { env } from '@/shared/config'
+import { actingAs } from './acting'
 import { refreshSession, session } from './session'
 
 export class ApiError extends Error {
@@ -25,6 +26,7 @@ async function send(path: string, init?: RequestInit) {
     headers: {
       ...(isForm ? {} : { 'Content-Type': 'application/json' }),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...actingAs.headerFor(path),
       ...init?.headers,
     },
   })

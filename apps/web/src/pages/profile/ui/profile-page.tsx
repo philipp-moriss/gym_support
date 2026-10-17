@@ -1,6 +1,7 @@
 import { NotebookPen, Trophy } from 'lucide-react'
 import { useEntries, volume } from '@/entities/entry'
 import { InstallCard } from '@/features/install-app'
+import { MyCoachCard } from '@/features/link-coach'
 import { routes } from '@/shared/config'
 import { num, plural, tonnage } from '@/shared/lib'
 import { MenuLink, PageHeader, PageState } from '@/shared/ui'
@@ -19,6 +20,7 @@ export function ProfilePage() {
     <div className="flex flex-col gap-6">
       <PageHeader label="Аккаунт и история" title="Профиль" />
       <AccountCard />
+      <MyCoachCard />
       <div className="grid grid-cols-2 gap-2">
         <Stat label="Тренировок" value={num(workouts)} />
         <Stat label="Поднято всего" value={tonnage(total)} />
