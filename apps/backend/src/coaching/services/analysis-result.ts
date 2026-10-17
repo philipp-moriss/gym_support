@@ -15,10 +15,18 @@ export interface SuggestedChange {
   before: {
     base: number | null;
     step: number;
+    targetSets: number;
+    repsMin: number;
+    repsMax: number;
     weeks: ProgramWeekPlan[] | null;
+    /** Что предложил бы скрипт (двойная прогрессия) на следующую тренировку. */
+    formula: number | null;
   };
   base?: number;
   step?: number;
+  targetSets?: number;
+  repsMin?: number;
+  repsMax?: number;
   weeks?: ProgramWeekPlan[];
   reason: string;
 }
@@ -117,6 +125,8 @@ const same = (a: unknown, b: unknown) =>
 export function normalizeProgramReview(
   raw: Record<string, unknown>,
   exercises: ProgramExerciseView[],
+  /** Вес по формулам на следующую тренировку, по id упражнения. */
+  formula: Map<string, number> = new Map(),
 ): ProgramReview {
   const byId = new Map(exercises.map((e) => [e.id, e]));
   const seen = new Set<string>();
@@ -136,18 +146,43 @@ export function normalizeProgramReview(
     const base = ex.base !== null ? num(r.base, 0, 1000) : undefined;
     const step = num(r.step, 0, 50);
     const weeks = ex.weeks !== null ? weeksOf(r.weeks) : undefined;
+    const withBase = ex.base !== null;
+    const targetSets = withBase ? int(r.targetSets, 1, 10) : undefined;
+    const repsMin = withBase ? int(r.repsMin, 1, 100) : undefined;
+    const repsMax = withBase ? int(r.repsMax, 1, 100) : undefined;
+    const current = formula.get(ex.id) ?? ex.base;
     const change: SuggestedChange = {
       exerciseId: ex.id,
       exercise: ex.name,
-      before: { base: ex.base, step: ex.step, weeks: ex.weeks },
-      ...(base !== undefined && base !== ex.base && { base }),
+      before: {
+        base: ex.base,
+        step: ex.step,
+        targetSets: ex.targetSets,
+        repsMin: ex.repsMin,
+        repsMax: ex.repsMax,
+        weeks: ex.weeks,
+        formula: withBase ? (formula.get(ex.id) ?? null) : null,
+      },
+      // Рабочий вес, совпадающий с расчётом формул, — не правка.
+      ...(base !== undefined && base !== current && { base }),
       ...(step !== undefined && step !== ex.step && { step }),
+      ...(targetSets !== undefined &&
+        targetSets !== ex.targetSets && { targetSets }),
+      ...(repsMin !== undefined && repsMin !== ex.repsMin && { repsMin }),
+      ...(repsMax !== undefined && repsMax !== ex.repsMax && { repsMax }),
       ...(weeks && !same(weeks, ex.weeks) && { weeks }),
       reason,
     };
+    if ((change.repsMin ?? ex.repsMin) > (change.repsMax ?? ex.repsMax)) {
+      dropped++;
+      continue;
+    }
     if (
       change.base === undefined &&
       change.step === undefined &&
+      change.targetSets === undefined &&
+      change.repsMin === undefined &&
+      change.repsMax === undefined &&
       change.weeks === undefined
     ) {
       dropped++;

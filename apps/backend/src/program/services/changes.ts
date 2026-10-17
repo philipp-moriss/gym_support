@@ -43,6 +43,9 @@ interface ExerciseLike {
   name: string;
   base: number | null;
   step: number;
+  targetSets: number;
+  repsMin: number;
+  repsMax: number;
   weeks: WeekPlan[] | null;
   days: number[];
   tips: string[];
@@ -59,6 +62,10 @@ export function diffExercise(
     out.push({ field: 'base', before: kg(before.base), after: kg(after.base) });
   if (!same(before.step, after.step))
     out.push({ field: 'step', before: kg(before.step), after: kg(after.step) });
+  const scheme = (e: ExerciseLike) =>
+    `${e.targetSets}×${e.repsMin}–${e.repsMax}`;
+  if (before.base !== null && scheme(before) !== scheme(after))
+    out.push({ field: 'scheme', before: scheme(before), after: scheme(after) });
   if (!same(before.weeks, after.weeks))
     out.push({
       field: 'weeks',

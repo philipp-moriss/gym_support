@@ -44,7 +44,10 @@ export class Exercise {
   @Column({ type: 'boolean', default: false })
   perSide: boolean;
 
-  /** Последний рабочий вес — от него считаются недели. null — план по неделям в weeks. */
+  /**
+   * Рабочий вес: с ним идёт тренировка, дальше — двойная прогрессия
+   * (docs/training-progression.md). null — план по неделям в weeks.
+   */
   @Column({
     type: 'numeric',
     precision: 7,
@@ -63,6 +66,21 @@ export class Exercise {
     transformer: numeric,
   })
   step: number;
+
+  /** Когда рабочий вес задан руками: позже последней записи — считаем от него, а не от записи. */
+  @Column({ type: 'timestamptz', nullable: true })
+  baseSetAt: Date | null;
+
+  /** Подходов для упражнения с рабочим весом. */
+  @Column({ type: 'smallint', default: 3 })
+  targetSets: number;
+
+  /** Диапазон повторов для двойной прогрессии. */
+  @Column({ type: 'smallint', default: 12 })
+  repsMin: number;
+
+  @Column({ type: 'smallint', default: 15 })
+  repsMax: number;
 
   /** План на 4 недели, если вес не считается от базы. */
   @Column({ type: 'jsonb', nullable: true })

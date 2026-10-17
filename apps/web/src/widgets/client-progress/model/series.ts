@@ -1,4 +1,5 @@
 import type { Entry } from '@/entities/entry'
+import { e1rm } from '@/entities/program'
 import type { ChartPoint } from '@/shared/ui'
 
 const label = (iso: string) => `${iso.slice(8, 10)}.${iso.slice(5, 7)}`
@@ -54,4 +55,18 @@ export function loggedExercises(entries: Entry[]) {
     if (e.exerciseId)
       count.set(e.exerciseId, (count.get(e.exerciseId) ?? 0) + 1)
   return [...count.entries()].sort((a, b) => b[1] - a[1]).map(([id]) => id)
+}
+
+/** Оценочный максимум на 1 повтор (Epley с RIR) — лучший за день. */
+export function e1rmSeries(entries: Entry[], exerciseId: string) {
+  return byDate(entries.filter((e) => e.exerciseId === exerciseId)).flatMap(
+    ([date, items]) => {
+      const values = items
+        .map((e) => e1rm(e))
+        .filter((v): v is number => v !== null)
+      return values.length
+        ? [{ label: label(date), value: Math.max(...values) }]
+        : []
+    },
+  )
 }

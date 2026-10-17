@@ -48,8 +48,17 @@ export function useUpdateExercise() {
     onMutate: ({ id, patch }) =>
       cache.optimistic((p) => ({
         ...p,
+        // Рабочий вес задан руками — сразу точка отсчёта, как сделает сервер.
         exercises: p.exercises.map((e) =>
-          e.id === id ? { ...e, ...patch } : e,
+          e.id === id
+            ? {
+                ...e,
+                ...patch,
+                ...(patch.base !== undefined && {
+                  baseSetAt: new Date().toISOString(),
+                }),
+              }
+            : e,
         ),
       })),
     onError: (_e, _v, ctx) => cache.rollback(ctx),

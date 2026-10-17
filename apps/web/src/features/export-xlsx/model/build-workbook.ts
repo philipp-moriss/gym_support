@@ -1,12 +1,12 @@
 import type { Borders, Fill, Font, Worksheet } from 'exceljs'
 import { sortEntries, volume, type Entry } from '@/entities/entry'
 import {
-  WEEK_PERCENT,
   hasBase,
-  planFor,
+  nextWorkout,
+  weekPlanFor,
   type Exercise,
 } from '@/entities/program'
-import { downloadBlob, num } from '@/shared/lib'
+import { downloadBlob, num, todayIso } from '@/shared/lib'
 import { xlsxPalette as c } from './palette'
 
 /*
@@ -226,35 +226,46 @@ export async function buildWorkbook(entries: Entry[], exercises: Exercise[]) {
   ]
   paintTotalRow(journal, r, journalCols)
 
-  // Лист 2: рабочие веса на 4 недели, как в исходном плане
+  // Лист 2: рабочие веса на следующую тренировку (двойная прогрессия) и планы по неделям
   const planCols: Column[] = [
     { header: 'Упражнение', width: 34 },
-    { header: 'Последний вес', width: 15, numFmt: '0.0' },
-    ...WEEK_PERCENT.map((p, i) => ({
-      header: `Нед. ${i + 1} · ${Math.round(p * 100)}%`,
-      width: 16,
-    })),
+    { header: 'Вес', width: 12 },
+    { header: 'Схема', width: 14 },
+    { header: 'Почему', width: 48 },
   ]
-  const plan = wb.addWorksheet('Веса на 4 недели', {
+  const plan = wb.addWorksheet('Рабочие веса', {
     properties: { tabColor: { argb: c.hiVisYellow } },
   })
   r = paintHead(
     plan,
     'Рабочие веса',
-    `Округление до 2,5 кг · ${today}`,
+    `На следующую тренировку · ${today}`,
     planCols,
   )
+  const iso = todayIso()
   exercises
     .filter((ex) => ex.group === 'main')
     .forEach((ex, i) => {
-      const weeks = [1, 2, 3, 4].map((w) => {
-        const p = planFor(ex, w)
-        const weight = hasBase(ex)
-          ? `${num(p.weight ?? 0)} кг`
-          : (p.label ?? (p.weight ? `${num(p.weight)} кг` : ''))
-        return `${weight}: ${p.sets} × ${p.repsMax ? `${p.reps}–${p.repsMax}` : p.reps}`
-      })
-      plan.getRow(r).values = [ex.name, ex.base ?? '', ...weeks]
+      if (hasBase(ex)) {
+        const next = nextWorkout(ex, entries, iso)
+        plan.getRow(r).values = [
+          ex.name,
+          `${num(next.weight)} кг`,
+          `${next.sets} × ${next.reps}${next.reps < next.repsMax ? `–${next.repsMax}` : ''}`,
+          next.reason,
+        ]
+      } else {
+        const weeks = [1, 2, 3, 4].map((w) => {
+          const p = weekPlanFor(ex, w)
+          return `${p.sets}×${p.repsMax ? `${p.reps}–${p.repsMax}` : p.reps}`
+        })
+        plan.getRow(r).values = [
+          ex.name,
+          '',
+          '',
+          `План по неделям: ${weeks.join(' · ')}`,
+        ]
+      }
       paintBodyRow(plan, r, planCols, i % 2 === 1)
       r++
     })

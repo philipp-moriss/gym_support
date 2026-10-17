@@ -25,6 +25,7 @@ import { AiAnalysis } from '../entities/ai-analysis.entity';
 import { ClientNote } from '../entities/client-note.entity';
 import {
   cycleWeek,
+  formulaWeights,
   HISTORY_WEEKS,
   journalAnalysisData,
   programReviewData,
@@ -162,9 +163,17 @@ export class AnalysesService {
       const review = normalizeProgramReview(
         await this.agent.run(
           'program_review',
-          programReviewData({ notes, today, week, program, journal }),
+          programReviewData({
+            notes,
+            today,
+            week,
+            program,
+            journal,
+            entries,
+          }),
         ),
         program.exercises,
+        formulaWeights(program, entries, today),
       );
       if (review.dropped)
         this.logger.warn(

@@ -4,6 +4,7 @@ import type {
   ProgramWeekPlan,
 } from '../../shared';
 import type { JournalAnalysis } from './analysis-result';
+import { e1rm, progress } from './progression';
 
 /** Сколько недель дневника отдаём ИИ. */
 export const HISTORY_WEEKS = 12;
@@ -58,7 +59,9 @@ export function programLines({ exercises, settings }: ProgramView) {
       `мышцы ${e.muscle}`,
       e.group === 'main' ? 'основное' : 'доп.',
       `единица ${e.unit}${e.perSide ? ' (на сторону)' : ''}`,
-      e.base !== null ? `base ${e.base} кг` : `weeks ${weeksText(e.weeks)}`,
+      e.base !== null
+        ? `base ${e.base} кг, схема ${e.targetSets}×${e.repsMin}–${e.repsMax}`
+        : `weeks ${weeksText(e.weeks)}`,
       `step ${e.step}`,
       e.days.length ? `дни ${e.days.map((d) => DAYS[d]).join(',')}` : null,
       e.alternativeOf ? `замена для ${e.alternativeOf}` : null,
@@ -102,6 +105,7 @@ export function programReviewData(input: {
   week: number;
   program: ProgramView;
   journal: JournalAnalysis;
+  entries: JournalEntryView[];
 }) {
   return [
     notesBlock(input.notes),
@@ -113,5 +117,63 @@ export function programReviewData(input: {
     '',
     'Программа:',
     programLines(input.program),
+    '',
+    'Расчёт по формулам (двойная прогрессия, RIR = 10 − сложность, e1RM по Epley):',
+    formulaLines(input.program, input.entries, input.today),
   ].join('\n');
+}
+
+/**
+ * Расчёт скрипта по каждому упражнению с рабочим весом: что приложение
+ * предложит на следующей тренировке, и тренд оценочного максимума (e1RM).
+ */
+function formulas(
+  program: ProgramView,
+  entries: JournalEntryView[],
+  today: string,
+) {
+  const resetAt = program.settings.resetAt ?? '';
+  return program.exercises
+    .filter((e) => e.base !== null)
+    .map((e) => {
+      const history = entries
+        .filter((x) => x.exerciseId === e.id && x.date >= resetAt)
+        .toSorted(
+          (a, b) =>
+            b.date.localeCompare(a.date) ||
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+        );
+      return { e, history, next: progress(e, history, today) };
+    });
+}
+
+/** Вес по формулам на следующую тренировку — для «было → стало» в правках ИИ. */
+export function formulaWeights(
+  program: ProgramView,
+  entries: JournalEntryView[],
+  today: string,
+) {
+  return new Map(
+    formulas(program, entries, today).map(({ e, next }) => [e.id, next.weight]),
+  );
+}
+
+export function formulaLines(
+  program: ProgramView,
+  entries: JournalEntryView[],
+  today: string,
+) {
+  const lines = formulas(program, entries, today).map(
+    ({ e, history, next }) => {
+      const est = history
+        .map((x) => e1rm(x))
+        .filter((v): v is number => v !== null);
+      const trend =
+        est.length >= 2
+          ? `e1RM ${est[est.length - 1]} → ${est[0]} кг`
+          : 'e1RM: мало данных';
+      return `- ${e.id}: следующая — ${next.weight} кг × ${next.sets}×${next.reps}${next.reps < next.repsMax ? `–${next.repsMax}` : ''} (${next.reason}); ${trend}`;
+    },
+  );
+  return lines.length ? lines.join('\n') : '(упражнений с рабочим весом нет)';
 }

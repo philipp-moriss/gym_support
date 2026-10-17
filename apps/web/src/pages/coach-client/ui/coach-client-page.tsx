@@ -21,6 +21,7 @@ import {
 import { AiAnalysisPanel } from '@/widgets/ai-analysis-panel'
 import { ClientChanges } from '@/widgets/client-changes'
 import { ClientProgress } from '@/widgets/client-progress'
+import { FormulaWeights } from '@/widgets/formula-weights'
 
 /** Клиент глазами тренера: здоровье, ИИ-анализ, прогресс, план и дневник. */
 export function CoachClientPage() {
@@ -89,6 +90,7 @@ export function CoachClientPage() {
         />
       </nav>
       <NotesEditor clientId={clientId} />
+      <FormulaWeights program={program.data} entries={entries} />
       <AiAnalysisPanel clientId={clientId} exercises={exercises} />
       <ClientProgress entries={entries} exercises={exercises} />
       <ClientChanges clientId={clientId} />

@@ -68,6 +68,27 @@ export class ExerciseChangeDto {
   @Max(50)
   step?: number;
 
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(10)
+  targetSets?: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  repsMin?: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  repsMax?: number;
+
   @ApiPropertyOptional({ type: [WeekPlanChangeDto] })
   @IsOptional()
   @IsArray()

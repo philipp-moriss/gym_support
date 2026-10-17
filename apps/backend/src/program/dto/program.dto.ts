@@ -62,6 +62,30 @@ export class CreateExerciseDto {
 
   @ApiProperty() @IsNumber() @Min(0) @Max(50) step: number;
 
+  @ApiPropertyOptional({
+    default: 3,
+    description: 'Подходов (с рабочим весом)',
+  })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(10)
+  targetSets?: number;
+
+  @ApiPropertyOptional({ default: 12, description: 'Нижняя граница повторов' })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  repsMin?: number;
+
+  @ApiPropertyOptional({ default: 15, description: 'Верхняя граница повторов' })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  repsMax?: number;
+
   @ApiPropertyOptional({ type: [WeekPlanDto], nullable: true })
   @IsOptional()
   @IsArray()

@@ -4,7 +4,12 @@ import type { Entry } from '@/entities/entry'
 import type { Exercise } from '@/entities/program'
 import { addDays, todayIso } from '@/shared/lib'
 import { Card, Chip, LineChart } from '@/shared/ui'
-import { exerciseSeries, feelSeries, loggedExercises } from '../model/series'
+import {
+  e1rmSeries,
+  exerciseSeries,
+  feelSeries,
+  loggedExercises,
+} from '../model/series'
 
 const PERIODS = [
   { days: 28, label: '4 нед.' },
@@ -32,6 +37,7 @@ export function ClientProgress({
   const names = new Map(exercises.map((e) => [e.id, e.short || e.name]))
   const feel = feelSeries(shown)
   const series = current ? exerciseSeries(shown, current) : null
+  const strength = current ? e1rmSeries(shown, current) : []
 
   return (
     <Card className="gap-4">
@@ -91,6 +97,19 @@ export function ClientProgress({
                   — график появится после второй.
                 </p>
               )}
+            </figure>
+          )}
+          {strength.length > 1 && (
+            <figure className="flex flex-col gap-1">
+              <figcaption className="mono-label text-muted-foreground">
+                Оценка максимума (e1RM, Epley с запасом повторов)
+              </figcaption>
+              <LineChart
+                points={strength}
+                unit=" кг"
+                height={140}
+                color="var(--lilac-shadow)"
+              />
             </figure>
           )}
           <div className="grid gap-4 sm:grid-cols-2">

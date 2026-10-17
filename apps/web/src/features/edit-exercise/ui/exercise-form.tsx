@@ -1,8 +1,6 @@
 import { Check, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import {
-  MAIN_SCHEME,
-  WEEK_PERCENT,
   muscles,
   type Exercise,
   type ExerciseInput,
@@ -40,18 +38,25 @@ const blankExercise = (): ExerciseInput => ({
   perSide: false,
   base: 20,
   step: 2.5,
+  targetSets: 3,
+  repsMin: 12,
+  repsMax: 15,
   weeks: null,
   alternativeOf: null,
   tips: [],
   days: [],
 })
 
-const toInput = ({ id: _id, position: _p, ...rest }: Exercise): ExerciseInput =>
-  rest
+const toInput = ({
+  id: _id,
+  position: _p,
+  baseSetAt: _b,
+  ...rest
+}: Exercise): ExerciseInput => rest
 
 /**
  * Своё упражнение: название, мышцы, единицы, как растёт нагрузка
- * (от рабочего веса по процентам или свой план на 4 недели), дни и нюансы.
+ * (от рабочего веса по двойной прогрессии или свой план на 4 недели), дни и нюансы.
  */
 export function ExerciseForm({
   initial,
@@ -83,7 +88,9 @@ export function ExerciseForm({
 
   const valid =
     v.name.trim().length > 0 &&
-    (byBase || weeks.every((w) => w.sets > 0 && w.reps > 0))
+    (byBase
+      ? v.targetSets > 0 && v.repsMin > 0 && v.repsMax >= v.repsMin
+      : weeks.every((w) => w.sets > 0 && w.reps > 0))
 
   return (
     <form
@@ -198,17 +205,35 @@ export function ExerciseForm({
       {byBase ? (
         <div className="flex flex-col gap-3 rounded-md bg-muted p-3">
           <p className="text-sm text-muted-foreground">
-            Недели считаются от последнего рабочего веса:{' '}
-            {WEEK_PERCENT.map((p) => `${Math.round(p * 100)}%`).join(' → ')},{' '}
-            {MAIN_SCHEME.map(
-              (w) =>
-                `${w.sets}×${w.repsMax ? `${w.reps}–${w.repsMax}` : w.reps}`,
-            ).join(', ')}
-            .
+            Тренировка идёт с рабочим весом. Сделал все подходы на верх
+            диапазона и не у отказа — вес растёт на шаг, иначе добираешь
+            повторы. Боль и перерыв снижают нагрузку.
           </p>
+          <div className="grid grid-cols-3 gap-3">
+            <NumberInput
+              label="Подходы"
+              value={v.targetSets}
+              onChange={(targetSets) => set({ targetSets })}
+            />
+            <NumberInput
+              label="Повторы от"
+              value={v.repsMin}
+              onChange={(repsMin) => set({ repsMin })}
+            />
+            <NumberInput
+              label="до"
+              value={v.repsMax}
+              onChange={(repsMax) => set({ repsMax })}
+            />
+          </div>
+          {v.repsMax < v.repsMin && (
+            <p className="text-sm text-destructive">
+              Верх диапазона меньше низа.
+            </p>
+          )}
           <div className="grid gap-3 sm:grid-cols-2">
             <Stepper
-              label="Последний рабочий вес"
+              label="Рабочий вес"
               unit="кг"
               step={v.step || 2.5}
               value={v.base ?? 0}

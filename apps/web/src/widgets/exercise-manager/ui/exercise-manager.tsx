@@ -1,13 +1,16 @@
 import { ArrowDown, ArrowUp, Pencil, Plus } from 'lucide-react'
 import { useState } from 'react'
+import { adaptiveEntries, type Entry } from '@/entities/entry'
 import {
   CYCLE_WEEKS,
   MuscleDot,
   hasBase,
   muscles,
-  planFor,
+  nextWorkout,
   programWeek,
+  schemeText,
   setsReps,
+  weekPlanFor,
   type Exercise,
   type Program,
 } from '@/entities/program'
@@ -22,11 +25,19 @@ import { cn, num, todayIso, weekdayShort } from '@/shared/lib'
 import { Button, Card, Stepper } from '@/shared/ui'
 
 /**
- * Упражнения программы: веса по неделям (пересчёт от «последнего веса»),
+ * Упражнения программы: рабочий вес (дальше растёт сам), план по неделям,
  * свои упражнения, порядок, дни. Всё сохраняется на сервере сразу.
  */
-export function ExerciseManager({ program }: { program: Program }) {
+export function ExerciseManager({
+  program,
+  entries,
+}: {
+  program: Program
+  entries: Entry[]
+}) {
   const { exercises, settings } = program
+  const adaptive = adaptiveEntries(entries, settings.resetAt)
+  const today = todayIso()
   const shownWeek = Math.min(
     programWeek(settings.startDate, todayIso()),
     CYCLE_WEEKS,
@@ -84,6 +95,9 @@ export function ExerciseManager({ program }: { program: Program }) {
             key={ex.id}
             ex={ex}
             shownWeek={shownWeek}
+            current={
+              hasBase(ex) ? nextWorkout(ex, adaptive, today).weight : null
+            }
             alternativeOf={
               ex.alternativeOf
                 ? exercises.find((o) => o.id === ex.alternativeOf)?.short
@@ -126,6 +140,7 @@ export function ExerciseManager({ program }: { program: Program }) {
 function ExerciseRow({
   ex,
   shownWeek,
+  current,
   alternativeOf,
   onBase,
   onEdit,
@@ -134,6 +149,8 @@ function ExerciseRow({
 }: {
   ex: Exercise
   shownWeek: number
+  /** Вес следующей тренировки по формулам (с рабочим весом). */
+  current: number | null
   alternativeOf?: string
   onBase: (base: number) => void
   onEdit: () => void
@@ -185,24 +202,23 @@ function ExerciseRow({
           <Pencil />
         </Button>
       </div>
-      <div
-        className={cn(
-          'grid grid-cols-1 items-end gap-3',
-          weighted && 'sm:grid-cols-[200px_1fr]',
-        )}
-      >
-        {weighted && (
+      {weighted ? (
+        <div className="grid grid-cols-1 items-end gap-3 sm:grid-cols-[200px_1fr]">
           <Stepper
-            label="Последний вес"
+            label="Рабочий вес"
             unit="кг"
             step={ex.step || 2.5}
-            value={ex.base ?? 0}
+            value={current ?? ex.base ?? 0}
             onChange={onBase}
           />
-        )}
+          <p className="pb-2 font-mono text-sm text-muted-foreground">
+            {schemeText(ex)} · растёт сам
+          </p>
+        </div>
+      ) : (
         <div className="grid grid-cols-4 gap-1.5">
           {[1, 2, 3, 4].map((w) => {
-            const p = planFor(ex, w)
+            const p = weekPlanFor(ex, w)
             return (
               <div
                 key={w}
@@ -212,7 +228,7 @@ function ExerciseRow({
                 )}
               >
                 <span className="font-mono text-base font-bold">
-                  {weighted || (p.weight ?? 0) > 0 ? num(p.weight ?? 0) : '—'}
+                  {(p.weight ?? 0) > 0 ? num(p.weight ?? 0) : '—'}
                 </span>
                 <span className="font-mono text-[11px] text-muted-foreground">
                   {setsReps(
@@ -222,7 +238,7 @@ function ExerciseRow({
                     p.repsMax,
                   )}
                 </span>
-                {!weighted && p.label && (
+                {p.label && (
                   <span className="w-full truncate text-[10px] text-muted-foreground">
                     {p.label}
                   </span>
@@ -231,7 +247,7 @@ function ExerciseRow({
             )
           })}
         </div>
-      </div>
+      )}
     </div>
   )
 }

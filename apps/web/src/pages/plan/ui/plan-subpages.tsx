@@ -14,14 +14,14 @@ function useBack() {
 
 /** Режим правки упражнений: веса, подходы, дни, порядок, новые упражнения. */
 export function PlanExercisesPage() {
-  const { program, ready, error, retry } = usePlanData()
+  const { program, entries, ready, error, retry } = usePlanData()
   const back = useBack()
   if (error) return <PageState error onRetry={retry} />
   if (!ready || !program) return <PageState />
   return (
     <div className="flex flex-col gap-6">
       <PageHeader label="Правка" title="Упражнения" back={back} />
-      <ExerciseManager program={program} />
+      <ExerciseManager program={program} entries={entries} />
     </div>
   )
 }

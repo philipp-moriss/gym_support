@@ -17,7 +17,11 @@ const exercise = (
   unit: 'reps',
   perSide: false,
   base: 40,
+  baseSetAt: null,
   step: 2.5,
+  targetSets: 3,
+  repsMin: 12,
+  repsMax: 15,
   weeks: null,
   alternativeOf: null,
   tips: [],
@@ -76,7 +80,15 @@ describe('normalizeProgramReview', () => {
       {
         exerciseId: 'bench',
         exercise: 'Жим лёжа',
-        before: { base: 40, step: 2.5, weeks: null },
+        before: {
+          base: 40,
+          step: 2.5,
+          targetSets: 3,
+          repsMin: 12,
+          repsMax: 15,
+          weeks: null,
+          formula: null,
+        },
         base: 42.5,
         reason: 'легко',
       },
@@ -105,6 +117,35 @@ describe('normalizeProgramReview', () => {
       ['bench', 45],
     ]);
     expect(review.dropped).toBe(6);
+  });
+
+  it('compares the weight with the formula result and accepts rep-range changes', () => {
+    const review = normalizeProgramReview(
+      {
+        summary: 's',
+        changes: [
+          { exerciseId: 'bench', base: 42.5, reason: 'как формула' },
+          { exerciseId: 'plank', repsMin: 8, reason: 'нет базы' },
+        ],
+      },
+      [exercise({ id: 'bench' }), exercise({ id: 'row', name: 'Тяга' })],
+      new Map([['bench', 42.5]]),
+    );
+    expect(review.changes).toEqual([]);
+    const scheme = normalizeProgramReview(
+      {
+        summary: 's',
+        changes: [
+          { exerciseId: 'bench', repsMin: 8, repsMax: 10, reason: 'сила' },
+          { exerciseId: 'row', repsMin: 14, repsMax: 10, reason: 'кривой' },
+        ],
+      },
+      [exercise({}), exercise({ id: 'row', name: 'Тяга' })],
+    );
+    expect(scheme.changes).toMatchObject([
+      { exerciseId: 'bench', repsMin: 8, repsMax: 10 },
+    ]);
+    expect(scheme.dropped).toBe(1);
   });
 
   it('accepts a full 4-week plan for a plan exercise', () => {

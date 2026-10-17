@@ -61,9 +61,21 @@ export type Trend = 'up' | 'flat' | 'down'
 export interface SuggestedChange {
   exerciseId: string
   exercise: string
-  before: { base: number | null; step: number; weeks: WeekPlan[] | null }
+  before: {
+    base: number | null
+    step: number
+    targetSets: number
+    repsMin: number
+    repsMax: number
+    weeks: WeekPlan[] | null
+    /** Что предложил бы скрипт на следующую тренировку. */
+    formula: number | null
+  }
   base?: number
   step?: number
+  targetSets?: number
+  repsMin?: number
+  repsMax?: number
   weeks?: WeekPlan[]
   reason: string
 }
@@ -104,6 +116,9 @@ export interface ChangeInput {
   exerciseId: string
   base?: number
   step?: number
+  targetSets?: number
+  repsMin?: number
+  repsMax?: number
   weeks?: WeekPlan[]
   reason: string
 }

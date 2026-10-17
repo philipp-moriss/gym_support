@@ -1,13 +1,15 @@
 import { Pencil, Plus } from 'lucide-react'
 import { Link } from 'react-router'
+import { adaptiveEntries, type Entry } from '@/entities/entry'
 import {
   CYCLE_WEEKS,
   MuscleDot,
   hasBase,
   muscles,
-  planFor,
+  nextWorkout,
   programWeek,
   setsReps,
+  weekPlanFor,
   type Exercise,
   type Program,
 } from '@/entities/program'
@@ -15,9 +17,16 @@ import { useScopedRoutes } from '@/shared/config'
 import { num, todayIso, weekdayShort } from '@/shared/lib'
 import { Card } from '@/shared/ui'
 
-/** Упражнения программы только для чтения: что и с каким весом на этой неделе. */
-export function ProgramOverview({ program }: { program: Program }) {
+/** Упражнения программы только для чтения: что и с каким весом в следующий раз. */
+export function ProgramOverview({
+  program,
+  entries,
+}: {
+  program: Program
+  entries: Entry[]
+}) {
   const { exercises, settings } = program
+  const adaptive = adaptiveEntries(entries, settings.resetAt)
   const routes = useScopedRoutes()
   const week = Math.min(
     programWeek(settings.startDate, todayIso()),
@@ -35,7 +44,7 @@ export function ProgramOverview({ program }: { program: Program }) {
             {routes.clientId ? 'Упражнения' : 'Мои упражнения'}
           </h2>
           <span className="mono-label text-muted-foreground">
-            Веса {week}-й недели
+            На следующую тренировку
           </span>
         </div>
         <Link
@@ -71,6 +80,7 @@ export function ProgramOverview({ program }: { program: Program }) {
                 key={ex.id}
                 ex={ex}
                 week={week}
+                entries={adaptive}
                 replaces={
                   ex.alternativeOf
                     ? byId.get(ex.alternativeOf)?.short
@@ -87,15 +97,20 @@ export function ProgramOverview({ program }: { program: Program }) {
 function Row({
   ex,
   week,
+  entries,
   replaces,
 }: {
   ex: Exercise
   week: number
+  entries: Entry[]
   replaces?: string
 }) {
-  const p = planFor(ex, week)
+  const p = hasBase(ex)
+    ? nextWorkout(ex, entries, todayIso())
+    : { ...weekPlanFor(ex, week), label: weekPlanFor(ex, week).label }
   const weight =
     hasBase(ex) || (p.weight ?? 0) > 0 ? `${num(p.weight ?? 0)} кг` : null
+  const label = 'label' in p ? p.label : undefined
   return (
     <div className="flex items-center gap-3 border-t border-border py-3 first-of-type:border-t-0">
       <MuscleDot muscle={ex.muscle} />
@@ -106,13 +121,18 @@ function Row({
           {ex.days.length > 0 &&
             ` · ${ex.days.map((d) => weekdayShort[d]).join(', ')}`}
           {replaces && ` · замена для «${replaces}»`}
-          {!weight && p.label && ` · ${p.label}`}
+          {!weight && label && ` · ${label}`}
         </span>
       </div>
       <div className="flex shrink-0 flex-col items-end">
         {weight && <span className="font-mono font-bold">{weight}</span>}
         <span className="font-mono text-xs text-muted-foreground">
-          {setsReps(ex, p.sets, p.reps, p.repsMax)}
+          {setsReps(
+            ex,
+            p.sets,
+            p.reps,
+            p.reps < (p.repsMax ?? 0) ? p.repsMax : undefined,
+          )}
         </span>
       </div>
     </div>

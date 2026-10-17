@@ -12,6 +12,12 @@ const weeksText = (weeks: Weeks | null | undefined) =>
     ?.map((w) => `${w.sets}×${w.reps}${w.repsMax ? `–${w.repsMax}` : ''}`)
     .join(' · ') ?? '—'
 
+const schemeOf = (s: {
+  targetSets: number
+  repsMin: number
+  repsMax: number
+}) => `${s.targetSets}×${s.repsMin}–${s.repsMax}`
+
 interface Row {
   on: boolean
   base?: string
@@ -56,6 +62,9 @@ export function ChangesPicker({
         ...(base !== undefined && Number.isFinite(base) && { base }),
         ...(step !== undefined && Number.isFinite(step) && { step }),
         ...(c.weeks && { weeks: c.weeks }),
+        ...(c.targetSets !== undefined && { targetSets: c.targetSets }),
+        ...(c.repsMin !== undefined && { repsMin: c.repsMin }),
+        ...(c.repsMax !== undefined && { repsMax: c.repsMax }),
       },
     ]
   })
@@ -91,8 +100,12 @@ export function ChangesPicker({
               <span className="font-semibold">{c.exercise}</span>
               {c.base !== undefined && (
                 <NumberChange
-                  label="Рабочий вес, кг"
-                  before={c.before.base}
+                  label={
+                    (c.before.formula ?? null) !== null
+                      ? 'Рабочий вес, кг (по формуле)'
+                      : 'Рабочий вес, кг'
+                  }
+                  before={c.before.formula ?? c.before.base ?? null}
                   value={rows[i].base ?? ''}
                   disabled={done || !rows[i].on}
                   onChange={(v) => set(i, { base: v })}
@@ -106,6 +119,23 @@ export function ChangesPicker({
                   disabled={done || !rows[i].on}
                   onChange={(v) => set(i, { step: v })}
                 />
+              )}
+              {(c.targetSets !== undefined ||
+                c.repsMin !== undefined ||
+                c.repsMax !== undefined) && (
+                <span className="font-mono text-sm text-muted-foreground">
+                  {schemeOf(c.before)} →{' '}
+                  {schemeOf({
+                    targetSets: c.targetSets ?? c.before.targetSets,
+                    repsMin: c.repsMin ?? c.before.repsMin,
+                    repsMax: c.repsMax ?? c.before.repsMax,
+                  })}
+                </span>
+              )}
+              {c.base === undefined && (c.before.formula ?? null) !== null && (
+                <span className="font-mono text-xs text-muted-foreground">
+                  Вес по формуле: {num(c.before.formula ?? 0)} кг
+                </span>
               )}
               {c.weeks && (
                 <span className="font-mono text-sm text-muted-foreground">

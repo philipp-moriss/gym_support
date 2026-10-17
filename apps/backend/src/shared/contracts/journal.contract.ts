@@ -12,6 +12,7 @@ export interface JournalEntryView {
   pain: number | null;
   effort: number | null;
   notes: string;
+  createdAt: Date;
 }
 
 /** Сводка для списка клиентов тренера. */

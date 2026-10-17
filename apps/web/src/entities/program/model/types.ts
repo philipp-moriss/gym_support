@@ -32,10 +32,16 @@ export interface Exercise {
   group: Group
   unit: Unit
   perSide: boolean
-  /** Последний рабочий вес — от него считаются недели. null — план в weeks. */
+  /** Рабочий вес, дальше — двойная прогрессия (docs/training-progression.md). null — план в weeks. */
   base: number | null
+  /** Когда рабочий вес задан руками: позже последней записи — считаем от него. */
+  baseSetAt: string | null
   /** Шаг изменения веса в степпере; 0 — без веса */
   step: number
+  /** Подходов и диапазон повторов для упражнения с рабочим весом. */
+  targetSets: number
+  repsMin: number
+  repsMax: number
   weeks: WeekPlan[] | null
   /** id упражнения, которое это заменяет */
   alternativeOf: string | null
@@ -44,7 +50,7 @@ export interface Exercise {
   days: number[]
 }
 
-export type ExerciseInput = Omit<Exercise, 'id' | 'position'>
+export type ExerciseInput = Omit<Exercise, 'id' | 'position' | 'baseSetAt'>
 
 /** День расписания, 0 — понедельник. */
 export interface DayPlan {

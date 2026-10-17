@@ -4,6 +4,9 @@ const base = {
   name: 'Жим',
   base: 40,
   step: 2.5,
+  targetSets: 3,
+  repsMin: 12,
+  repsMax: 15,
   weeks: null,
   days: [],
   tips: [],
@@ -16,6 +19,12 @@ describe('program change diff', () => {
       { field: 'base', before: '40 кг', after: '42.5 кг' },
     ]);
     expect(diffExercise(base, { ...base })).toEqual([]);
+  });
+
+  it('describes the set and rep scheme', () => {
+    expect(
+      diffExercise(base, { ...base, targetSets: 4, repsMin: 8, repsMax: 12 }),
+    ).toEqual([{ field: 'scheme', before: '3×12–15', after: '4×8–12' }]);
   });
 
   it('formats a weekly plan in one line', () => {

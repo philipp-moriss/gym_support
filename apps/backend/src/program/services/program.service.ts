@@ -140,8 +140,10 @@ export class ProgramService implements ProgramSeeder, ProgramAccess {
       .select('MAX(e.position)', 'max')
       .where('e.userId = :userId', { userId })
       .getRawOne();
+    const normalized = this.normalize(dto);
     const exercise = this.exercises.create({
-      ...this.normalize(dto),
+      ...normalized,
+      baseSetAt: normalized.base !== null ? new Date() : null,
       userId,
       id: `c-${randomBytes(6).toString('base64url')}`,
       position: (max?.max ?? -1) + 1,
@@ -163,6 +165,9 @@ export class ProgramService implements ProgramSeeder, ProgramAccess {
     const exercise = await this.findExercise(userId, id);
     const next = { ...exercise, ...this.normalize({ ...exercise, ...dto }) };
     this.assertPlan(next);
+    // Рабочий вес задали руками — он точка отсчёта, а не прошлая запись.
+    if (next.base !== null && next.base !== exercise.base)
+      next.baseSetAt = new Date();
     const saved = await this.exercises.save({ ...next });
     if (foreign(userId, actor))
       await this.log(
@@ -229,7 +234,7 @@ export class ProgramService implements ProgramSeeder, ProgramAccess {
         await m
           .createQueryBuilder()
           .update(Exercise)
-          .set({ base })
+          .set({ base, baseSetAt: new Date() })
           .where('"userId" = :userId AND id = :id AND base IS NOT NULL', {
             userId,
             id,
@@ -267,18 +272,34 @@ export class ProgramService implements ProgramSeeder, ProgramAccess {
           throw bad('exercise has no base weight');
         if (change.weeks !== undefined && exercise.weeks === null)
           throw bad('exercise has no weekly plan');
+        const scheme = ['targetSets', 'repsMin', 'repsMax'] as const;
+        if (
+          exercise.base === null &&
+          scheme.some((k) => change[k] !== undefined)
+        )
+          throw bad('sets and rep range are for exercises with base weight');
         if (
           change.base === undefined &&
           change.step === undefined &&
-          change.weeks === undefined
+          change.weeks === undefined &&
+          scheme.every((k) => change[k] === undefined)
         )
           throw bad('nothing to change');
         const next: Exercise = {
           ...exercise,
-          ...(change.base !== undefined && { base: change.base }),
+          ...(change.base !== undefined && {
+            base: change.base,
+            baseSetAt: new Date(),
+          }),
           ...(change.step !== undefined && { step: change.step }),
           ...(change.weeks !== undefined && { weeks: change.weeks }),
+          ...(change.targetSets !== undefined && {
+            targetSets: change.targetSets,
+          }),
+          ...(change.repsMin !== undefined && { repsMin: change.repsMin }),
+          ...(change.repsMax !== undefined && { repsMax: change.repsMax }),
         };
+        if (next.repsMax < next.repsMin) throw bad('repsMax below repsMin');
         await m.save(Exercise, next);
         await this.log(
           m,
@@ -361,21 +382,32 @@ export class ProgramService implements ProgramSeeder, ProgramAccess {
       perSide: dto.perSide ?? false,
       base: dto.base ?? null,
       weeks: dto.weeks ?? null,
+      targetSets: dto.targetSets ?? 3,
+      repsMin: dto.repsMin ?? 12,
+      repsMax: dto.repsMax ?? 15,
       alternativeOf: dto.alternativeOf || null,
       tips: (dto.tips ?? []).map((t) => t.trim()).filter(Boolean),
       days: [...new Set(dto.days ?? [])].sort(),
     };
   }
 
-  /** Упражнение считается либо от последнего веса, либо по плану на 4 недели. */
-  private assertPlan(dto: Pick<CreateExerciseDto, 'base' | 'weeks'>) {
+  /** Упражнение считается либо от рабочего веса (двойная прогрессия), либо по плану на 4 недели. */
+  private assertPlan(
+    dto: Pick<CreateExerciseDto, 'base' | 'weeks' | 'repsMin' | 'repsMax'>,
+  ) {
     const hasBase = dto.base !== null && dto.base !== undefined;
     if (hasBase === !!dto.weeks) {
       throw new BadRequestException('Exercise needs either base or weeks');
     }
+    if ((dto.repsMax ?? 15) < (dto.repsMin ?? 12))
+      throw new BadRequestException('repsMax below repsMin');
   }
 }
 
-/** Упражнение одной строкой для журнала правок: «3×12–15 · … » или «база 40 кг». */
-const describe = (e: Pick<Exercise, 'base' | 'weeks'>) =>
-  e.base !== null ? `рабочий вес ${Number(e.base)} кг` : formatWeeks(e.weeks);
+/** Упражнение одной строкой для журнала правок: «40 кг · 3×12–15» или план по неделям. */
+const describe = (
+  e: Pick<Exercise, 'base' | 'weeks' | 'targetSets' | 'repsMin' | 'repsMax'>,
+) =>
+  e.base !== null
+    ? `${Number(e.base)} кг · ${e.targetSets}×${e.repsMin}–${e.repsMax}`
+    : formatWeeks(e.weeks);

@@ -21,7 +21,12 @@ export interface ProgramExerciseView {
   unit: string;
   perSide: boolean;
   base: number | null;
+  /** Когда рабочий вес задан руками; позже последней записи — точка отсчёта. */
+  baseSetAt: Date | null;
   step: number;
+  targetSets: number;
+  repsMin: number;
+  repsMax: number;
   weeks: ProgramWeekPlan[] | null;
   alternativeOf: string | null;
   tips: string[];
@@ -48,11 +53,14 @@ export interface ProgramActor {
   reason?: string | null;
 }
 
-/** Правка упражнения из ИИ-анализа: хотя бы одно из base, step, weeks. */
+/** Правка упражнения из ИИ-анализа: хотя бы одно поле нагрузки. */
 export interface ExerciseChange {
   exerciseId: string;
   base?: number;
   step?: number;
+  targetSets?: number;
+  repsMin?: number;
+  repsMax?: number;
   weeks?: ProgramWeekPlan[];
   reason: string;
 }

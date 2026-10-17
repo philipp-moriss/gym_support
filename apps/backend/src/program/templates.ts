@@ -30,7 +30,7 @@ const backExercises: ExerciseTemplate[] = [
     muscle: 'chest',
     group: 'main',
     unit: 'reps',
-    base: 52.5,
+    base: 45,
     step: 2.5,
     tips: [
       'Лопатки сведены и прижаты к скамье — так плечам безопасно.',
@@ -46,7 +46,7 @@ const backExercises: ExerciseTemplate[] = [
     muscle: 'back',
     group: 'main',
     unit: 'reps',
-    base: 55,
+    base: 47.5,
     step: 2.5,
     tips: [
       'Спина ровная, без округления и раскачки корпусом.',
@@ -61,7 +61,7 @@ const backExercises: ExerciseTemplate[] = [
     muscle: 'glutes',
     group: 'main',
     unit: 'reps',
-    base: 115,
+    base: 97.5,
     step: 2.5,
     tips: [
       'Лопатки упираются в скамью, голени вертикально в верхней точке.',
@@ -76,7 +76,7 @@ const backExercises: ExerciseTemplate[] = [
     muscle: 'legs',
     group: 'main',
     unit: 'reps',
-    base: 45,
+    base: 37.5,
     step: 2.5,
     tips: [
       'Спина прижата к спинке тренажёра.',
@@ -90,7 +90,7 @@ const backExercises: ExerciseTemplate[] = [
     muscle: 'back',
     group: 'main',
     unit: 'reps',
-    base: 45,
+    base: 37.5,
     step: 2.5,
     tips: [
       'Тяни к верху груди, не за голову.',
@@ -105,7 +105,7 @@ const backExercises: ExerciseTemplate[] = [
     muscle: 'legs',
     group: 'main',
     unit: 'reps',
-    base: 20,
+    base: 17.5,
     step: 2.5,
     tips: [
       'Таз прижат к скамье, не отрывай его.',

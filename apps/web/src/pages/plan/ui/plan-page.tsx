@@ -24,7 +24,7 @@ export function PlanPage() {
         back={routes.planBack}
       />
       <CyclePlan program={program} entries={entries} compact />
-      <ProgramOverview program={program} />
+      <ProgramOverview program={program} entries={entries} />
       <nav className="flex flex-col gap-2" aria-label="Настройки плана">
         <MenuLink
           to={routes.planSchedule}
