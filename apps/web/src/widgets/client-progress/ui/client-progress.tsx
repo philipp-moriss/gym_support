@@ -77,7 +77,20 @@ export function ClientProgress({
               <figcaption className="mono-label text-muted-foreground">
                 {series.unit ? 'Лучший вес за день' : 'Лучшие повторы за день'}
               </figcaption>
-              <LineChart points={series.points} unit={series.unit} />
+              {series.points.length > 1 ? (
+                <LineChart
+                  points={series.points}
+                  unit={series.unit}
+                  height={160}
+                />
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  Пока одна тренировка
+                  {series.points[0] &&
+                    ` (${series.points[0].label}: ${series.points[0].value}${series.unit})`}
+                  — график появится после второй.
+                </p>
+              )}
             </figure>
           )}
           <div className="grid gap-4 sm:grid-cols-2">
@@ -90,6 +103,7 @@ export function ClientProgress({
                   points={feel.pain}
                   min={0}
                   max={10}
+                  height={110}
                   color="var(--firecracker-red)"
                 />
               </figure>
@@ -103,6 +117,7 @@ export function ClientProgress({
                   points={feel.effort}
                   min={0}
                   max={10}
+                  height={110}
                   color="var(--magenta-punch)"
                 />
               </figure>

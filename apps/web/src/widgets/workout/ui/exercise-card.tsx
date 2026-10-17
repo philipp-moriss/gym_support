@@ -398,20 +398,12 @@ function Details({
           onSetDone={() => restTimer.start()}
         />
 
+        {/* Подписи фиксированной высоты: пока тянешь слайдер, карточка не прыгает. */}
         <label className="flex flex-col gap-3">
           <span className="flex items-baseline justify-between gap-2">
             <span className="mono-label text-muted-foreground">Сложность</span>
-            <span className="text-right font-mono text-sm">
+            <span className="font-mono text-sm whitespace-nowrap">
               <b className="text-lg">{effort}</b>/10 · {effortLabel(effort)}
-              {effort >= HARD_MIN && (
-                <span className="text-muted-foreground"> · повторим вес</span>
-              )}
-              {effort <= EASY_MAX && (
-                <span className="text-muted-foreground">
-                  {' '}
-                  · добавим повторы
-                </span>
-              )}
             </span>
           </span>
           <input
@@ -422,18 +414,22 @@ function Details({
             onChange={(e) => onChange({ effort: Number(e.target.value) })}
             className="pain-range effort-range"
           />
+          <span className="h-5 truncate text-sm text-muted-foreground">
+            {effort >= HARD_MIN
+              ? 'Повторим вес в следующий раз'
+              : effort <= EASY_MAX
+                ? 'Добавим повторы в следующий раз'
+                : ''}
+          </span>
         </label>
 
         <label className="flex flex-col gap-3">
-          <span className="flex items-baseline justify-between">
+          <span className="flex items-baseline justify-between gap-2">
             <span className="mono-label text-muted-foreground">
               Боль в спине
             </span>
-            <span className="font-mono text-sm">
-              <b className="text-lg">{pain}</b>/10{' '}
-              {pain >= PAIN_LIMIT && (
-                <span className="text-destructive">· снизим нагрузку</span>
-              )}
+            <span className="font-mono text-sm whitespace-nowrap">
+              <b className="text-lg">{pain}</b>/10
             </span>
           </span>
           <input
@@ -444,6 +440,9 @@ function Details({
             onChange={(e) => onChange({ pain: Number(e.target.value) })}
             className="pain-range"
           />
+          <span className="h-5 truncate text-sm text-destructive">
+            {pain >= PAIN_LIMIT ? 'Снизим нагрузку в следующий раз' : ''}
+          </span>
         </label>
 
         <Input
