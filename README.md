@@ -5,7 +5,8 @@
 Одна репа, независимые проекты (у каждого свои `package.json` и `node_modules`):
 
 - `apps/backend/`: NestJS 11, TypeORM + Postgres, Swagger.
-- `apps/web/`: React + Vite, FSD, Tailwind, TanStack Query, React Router. Дизайн-система «Flying Papers» (как в FAS).
+- `apps/web/`: React + Vite, FSD, Tailwind, TanStack Query, React Router. Дизайн-система «Flying Papers» (как в FAS). Клиент и кабинет тренера.
+- `apps/admin/`: админка на том же стеке: тренеры, клиенты, промпты ИИ, статистика.
 
 ## Запуск
 
@@ -18,6 +19,7 @@ docker compose -f docker-compose.dev.yml up --build
 | Сервис | Адрес |
 |---|---|
 | Приложение | http://localhost:5190 |
+| Админка | http://localhost:5191 (dev: `admin` / `dev-admin-password`) |
 | API / Swagger | http://localhost:3020/api, http://localhost:3020/docs |
 | Postgres | `localhost:5462`, БД/пользователь/пароль `gym` |
 
@@ -30,6 +32,7 @@ docker compose -f docker-compose.dev.yml up -d postgres
 cp apps/backend/.env.example apps/backend/.env.development
 npm --prefix apps/backend install && npm --prefix apps/backend run start:dev
 npm --prefix apps/web install && npm --prefix apps/web run dev
+npm --prefix apps/admin install && npm --prefix apps/admin run dev
 ```
 
 ## Что умеет
@@ -42,6 +45,18 @@ npm --prefix apps/web install && npm --prefix apps/web run dev
 - **Профиль** — аккаунт (смена кода, выход), итоги и разделы:
   - **Дневник** — записи по дням (тап — исправить вес, подходы, сложность, боль, заметку), выгрузка `.xlsx` («Дневник», «Веса на 4 недели», «Сводка»), загрузка `.xlsx` с прошлыми тренировками;
   - **Награды** — сколько поднято сегодня и всего, сравнения («как поднять 1 гориллу», «перетаскать 3 легковушки»), коллекция от кошки до Эйфелевой башни, значки, личные рекорды.
+
+## Тренеры, ИИ и админка
+
+- **Админ** входит в `apps/admin` логином и паролем. Первый админ создаётся при старте бэкенда из `ADMIN_LOGIN` / `ADMIN_PASSWORD` (в dev — `admin` / `dev-admin-password`). Админ заводит тренеров (код входа показывается один раз), выдаёт новый код, блокирует, задаёт дневной лимит ИИ, назначает клиентам тренеров, правит промпты ИИ и смотрит статистику и ошибки анализов.
+- **Тренер** входит своим кодом в то же web-приложение и попадает в кабинет `/coach`: список клиентов с сигналами («боль 4+ за 2 недели», «7+ дней без тренировок»), «Новый клиент» (аккаунт с программой, код входа — тренеру) и «Пригласить» (одноразовый код на 7 дней для клиента, у которого уже есть аккаунт). На странице клиента:
+  - карточка «Здоровье и цели»: болезни, травмы, ограничения, цели текстом;
+  - ИИ-анализ: дневник за 12 недель → программа → отчёт и правки весов и схемы галочками, числа можно поправить, «Применить»;
+  - графики прогресса;
+  - история правок;
+  - «План» и «Дневник» клиента: план с правкой, дневник только для чтения.
+- **Клиент** видит правки тренера на «Сегодня» («Тренер изменил программу», с причиной), в «Профиле» → «Мой тренер» вводит код приглашения или отвязывается.
+- **ИИ** — агент на платформе ultra-ai. Как его настроить и что он получает и отвечает — [docs/ai-agent-contract.md](docs/ai-agent-contract.md). Дизайн — [docs/superpowers/specs/2026-10-17-coach-admin-ai-design.md](docs/superpowers/specs/2026-10-17-coach-admin-ai-design.md).
 
 ### Импорт Excel
 
@@ -66,5 +81,6 @@ npm --prefix apps/web install && npm --prefix apps/web run dev
 |---|---|
 | backend | `npm test`, `npm run test:e2e` (нужен Postgres), `npm run lint`, `npm run lint:deps`, `npm run build` |
 | web | `npm run lint`, `npm run lint:deps`, `npm run typecheck`, `npm run build` |
+| admin | `npm run lint`, `npm run lint:deps`, `npm run typecheck`, `npm run build` |
 
 Миграции: `npm --prefix apps/backend run migration:generate -- src/migrations/<Name>`, применяются автоматически при старте.

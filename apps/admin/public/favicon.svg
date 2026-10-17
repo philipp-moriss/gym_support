@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Чёрная гиря со смайликом на фиолетовой сцене («Flying Papers»).
+       Крупная версия для иконки «any» и iOS; maskable — icon.svg. -->
+  <rect width="512" height="512" fill="#8584bd"/>
+  <g transform="translate(256 280) scale(1.1) translate(-256 -280)">
+  <path d="M176 262 C128 196 150 116 256 116 C362 116 384 196 336 262" fill="none" stroke="#1a1a1a" stroke-width="40" stroke-linecap="round"/>
+  <circle cx="256" cy="312" r="136" fill="#1a1a1a"/>
+  <rect x="176" y="424" width="160" height="22" rx="10" fill="#1a1a1a"/>
+  <circle cx="216" cy="298" r="15" fill="#f4ed36"/>
+  <circle cx="296" cy="298" r="15" fill="#f4ed36"/>
+  <path d="M220 344 Q256 380 292 344" fill="none" stroke="#f4ed36" stroke-width="14" stroke-linecap="round"/>
+  </g>
+</svg>
