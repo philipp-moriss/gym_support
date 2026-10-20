@@ -6,6 +6,7 @@ import {
   ChevronDown,
   Equal,
   Pencil,
+  Plus,
   Repeat2,
   RotateCcw,
   Sparkles,
@@ -32,7 +33,7 @@ import {
 } from '@/entities/program'
 import { useDraft } from '@/features/edit-draft'
 import { restTimer } from '@/features/rest-timer'
-import { formatDay, num } from '@/shared/lib'
+import { formatDay, haptic, num } from '@/shared/lib'
 import {
   Button,
   Collapse,
@@ -169,6 +170,11 @@ export function ExerciseCard({
                 {badge.text}
               </span>
             )}
+            {!done && (values.setsDone?.length ?? 0) > 0 && (
+              <span className="mono-label rounded-full bg-hi-vis-yellow px-2 py-1 text-ink">
+                {values.setsDone!.length}/{values.sets}
+              </span>
+            )}
             {modified && (
               <span className="mono-label inline-flex items-center gap-1 rounded-full bg-[var(--lilac)] px-2 py-1 text-ink">
                 <Pencil className="size-3" strokeWidth={3} />
@@ -221,7 +227,14 @@ export function ExerciseCard({
             defaults={defaults}
             modified={modified}
             onChange={(patch) => save({ ...values, ...patch })}
-            onReset={clear}
+            onReset={() =>
+              save({
+                ...values,
+                weight: defaults.weight,
+                sets: defaults.sets,
+                reps: defaults.reps,
+              })
+            }
             onLog={(v) => {
               onLog(v)
               clear()
@@ -261,6 +274,12 @@ function Details({
 }) {
   const { weight, sets, reps, pain, effort, notes } = values
   const setsDone = values.setsDone ?? []
+  const allSetsDone = setsDone.length >= sets
+  // Нагрузка правится только после «Изменить»: случайный тап по степперу не сдвинет вес.
+  const [editLoad, setEditLoad] = useState(false)
+  // Упражнение уже записано: форма скрыта, пока не нажали «Записать ещё раз».
+  const [again, setAgain] = useState(false)
+  const showForm = today.length === 0 || again
 
   const repsStep = ex.unit === 'sec' ? 5 : 1
 
@@ -334,149 +353,210 @@ function Details({
               .join(', ')}
           </p>
         )}
-        <div
-          className={clsx(
-            'grid gap-3',
-            ex.step > 0 ? 'grid-cols-1 sm:grid-cols-3' : 'grid-cols-2',
-          )}
-        >
-          {ex.step > 0 && (
-            <Stepper
-              label="Вес"
-              unit="кг"
-              value={weight}
-              step={ex.step}
-              onChange={(v) => onChange({ weight: v })}
+        {!showForm ? (
+          <Button
+            variant="outline"
+            size="sm"
+            className="self-start"
+            onClick={() => setAgain(true)}
+          >
+            <Plus />
+            Записать ещё раз
+          </Button>
+        ) : (
+          <>
+            {editLoad ? (
+              <div
+                className={clsx(
+                  'grid gap-3',
+                  ex.step > 0 ? 'grid-cols-1 sm:grid-cols-3' : 'grid-cols-2',
+                )}
+              >
+                {ex.step > 0 && (
+                  <Stepper
+                    label="Вес"
+                    unit="кг"
+                    value={weight}
+                    step={ex.step}
+                    onChange={(v) => onChange({ weight: v })}
+                  />
+                )}
+                <Stepper
+                  label="Подходы"
+                  value={sets}
+                  min={1}
+                  decimals={false}
+                  onChange={(v) => onChange({ sets: v })}
+                />
+                <Stepper
+                  label={
+                    ex.unit === 'reps'
+                      ? ex.perSide
+                        ? 'Повторы / сторона'
+                        : 'Повторы'
+                      : 'Время'
+                  }
+                  unit={ex.unit === 'reps' ? undefined : unitShort[ex.unit]}
+                  value={reps}
+                  min={1}
+                  step={repsStep}
+                  decimals={false}
+                  onChange={(v) => onChange({ reps: v })}
+                />
+                <Button
+                  variant="ink"
+                  size="sm"
+                  className="self-start sm:col-span-3"
+                  onClick={() => setEditLoad(false)}
+                >
+                  <Check strokeWidth={3} />
+                  Готово
+                </Button>
+              </div>
+            ) : (
+              <div className="flex items-center justify-between gap-2">
+                <span className="flex flex-col gap-1">
+                  <span className="mono-label text-muted-foreground">
+                    Нагрузка
+                  </span>
+                  <b className="font-mono">
+                    {ex.step > 0 && (
+                      <span className="whitespace-nowrap">
+                        {weightText(weight)} ·{' '}
+                      </span>
+                    )}
+                    <span className="whitespace-nowrap">
+                      {setsReps(ex, sets, reps)}
+                    </span>
+                  </b>
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setEditLoad(true)}
+                >
+                  <Pencil />
+                  Изменить
+                </Button>
+              </div>
+            )}
+            {modified && (
+              <div className="pop-in flex flex-wrap items-center justify-between gap-2 rounded-md bg-[color-mix(in_srgb,var(--lilac)_45%,var(--bone-white))] p-2 pl-3">
+                <span className="text-sm">
+                  Изменено вручную. По умолчанию:{' '}
+                  <b className="font-mono whitespace-nowrap">
+                    {ex.step > 0 && `${weightText(defaults.weight)} · `}
+                    {setsReps(ex, defaults.sets, defaults.reps)}
+                  </b>
+                </span>
+                <Button variant="outline" size="sm" onClick={onReset}>
+                  <RotateCcw />
+                  Вернуть по умолчанию
+                </Button>
+              </div>
+            )}
+
+            <SetTracker
+              planned={sets}
+              reps={reps}
+              repsLabel={ex.unit === 'reps' ? 'Повторы' : 'Время'}
+              done={setsDone}
+              onChange={(next) => onChange({ setsDone: next })}
+              onSetDone={() => restTimer.start()}
             />
-          )}
-          <Stepper
-            label="Подходы"
-            value={sets}
-            min={1}
-            decimals={false}
-            onChange={(v) => onChange({ sets: v })}
-          />
-          <Stepper
-            label={
-              ex.unit === 'reps'
-                ? ex.perSide
-                  ? 'Повторы / сторона'
-                  : 'Повторы'
-                : 'Время'
-            }
-            unit={ex.unit === 'reps' ? undefined : unitShort[ex.unit]}
-            value={reps}
-            min={1}
-            step={repsStep}
-            decimals={false}
-            onChange={(v) => onChange({ reps: v })}
-          />
-        </div>
-        {modified && (
-          <div className="pop-in flex flex-wrap items-center justify-between gap-2 rounded-md bg-[color-mix(in_srgb,var(--lilac)_45%,var(--bone-white))] p-2 pl-3">
-            <span className="text-sm">
-              Изменено вручную. По умолчанию:{' '}
-              <b className="font-mono whitespace-nowrap">
-                {ex.step > 0 && `${weightText(defaults.weight)} · `}
-                {setsReps(ex, defaults.sets, defaults.reps)}
-              </b>
-            </span>
-            <Button variant="outline" size="sm" onClick={onReset}>
-              <RotateCcw />
-              Вернуть по умолчанию
-            </Button>
-          </div>
-        )}
 
-        <SetTracker
-          planned={sets}
-          reps={reps}
-          repsLabel={ex.unit === 'reps' ? 'Повторы' : 'Время'}
-          done={setsDone}
-          onChange={(next) => onChange({ setsDone: next })}
-          onSetDone={() => restTimer.start()}
-        />
+            {/* Подписи фиксированной высоты: пока тянешь слайдер, карточка не прыгает. */}
+            <label className="flex flex-col gap-3">
+              <span className="flex items-baseline justify-between gap-2">
+                <span className="mono-label text-muted-foreground">
+                  Сложность
+                </span>
+                <span className="font-mono text-sm whitespace-nowrap">
+                  <b className="text-lg">{effort}</b>/10 · {effortLabel(effort)}
+                </span>
+              </span>
+              <input
+                type="range"
+                min={0}
+                max={10}
+                value={effort}
+                onChange={(e) => onChange({ effort: Number(e.target.value) })}
+                className="pain-range effort-range"
+              />
+              <span className="h-5 truncate text-sm text-muted-foreground">
+                {effort >= HARD_MIN
+                  ? 'Повторим вес в следующий раз'
+                  : effort <= EASY_MAX
+                    ? 'Добавим повторы в следующий раз'
+                    : ''}
+              </span>
+            </label>
 
-        {/* Подписи фиксированной высоты: пока тянешь слайдер, карточка не прыгает. */}
-        <label className="flex flex-col gap-3">
-          <span className="flex items-baseline justify-between gap-2">
-            <span className="mono-label text-muted-foreground">Сложность</span>
-            <span className="font-mono text-sm whitespace-nowrap">
-              <b className="text-lg">{effort}</b>/10 · {effortLabel(effort)}
-            </span>
-          </span>
-          <input
-            type="range"
-            min={0}
-            max={10}
-            value={effort}
-            onChange={(e) => onChange({ effort: Number(e.target.value) })}
-            className="pain-range effort-range"
-          />
-          <span className="h-5 truncate text-sm text-muted-foreground">
-            {effort >= HARD_MIN
-              ? 'Повторим вес в следующий раз'
-              : effort <= EASY_MAX
-                ? 'Добавим повторы в следующий раз'
-                : ''}
-          </span>
-        </label>
+            <label className="flex flex-col gap-3">
+              <span className="flex items-baseline justify-between gap-2">
+                <span className="mono-label text-muted-foreground">
+                  Боль в спине
+                </span>
+                <span className="font-mono text-sm whitespace-nowrap">
+                  <b className="text-lg">{pain}</b>/10
+                </span>
+              </span>
+              <input
+                type="range"
+                min={0}
+                max={10}
+                value={pain}
+                onChange={(e) => onChange({ pain: Number(e.target.value) })}
+                className="pain-range"
+              />
+              <span className="h-5 truncate text-sm text-destructive">
+                {pain >= PAIN_LIMIT ? 'Снизим нагрузку в следующий раз' : ''}
+              </span>
+            </label>
 
-        <label className="flex flex-col gap-3">
-          <span className="flex items-baseline justify-between gap-2">
-            <span className="mono-label text-muted-foreground">
-              Боль в спине
-            </span>
-            <span className="font-mono text-sm whitespace-nowrap">
-              <b className="text-lg">{pain}</b>/10
-            </span>
-          </span>
-          <input
-            type="range"
-            min={0}
-            max={10}
-            value={pain}
-            onChange={(e) => onChange({ pain: Number(e.target.value) })}
-            className="pain-range"
-          />
-          <span className="h-5 truncate text-sm text-destructive">
-            {pain >= PAIN_LIMIT ? 'Снизим нагрузку в следующий раз' : ''}
-          </span>
-        </label>
+            <Input
+              placeholder="Заметка: техника, самочувствие…"
+              value={notes}
+              onChange={(e) => onChange({ notes: e.target.value })}
+            />
 
-        <Input
-          placeholder="Заметка: техника, самочувствие…"
-          value={notes}
-          onChange={(e) => onChange({ notes: e.target.value })}
-        />
-
-        <Button
-          variant="ink"
-          className="relative w-full"
-          onClick={() => {
-            // Отмечали подходы — пишем именно их: число и повторы каждого.
-            const marked = setsDone.length > 0
-            onLog({
-              weight: ex.step > 0 ? weight : 0,
-              sets: marked ? setsDone.length : sets,
-              reps: marked
-                ? Math.round(
+            {/* Пока подходы не закончились, кнопка отмечает следующий; запись — только после всех. */}
+            <Button
+              variant="ink"
+              className={clsx(
+                'relative w-full',
+                allSetsDone &&
+                  'bg-hi-vis-yellow text-ink hover:bg-hi-vis-yellow/85',
+              )}
+              onClick={() => {
+                if (!allSetsDone) {
+                  haptic()
+                  onChange({ setsDone: [...setsDone, reps] })
+                  restTimer.start()
+                  return
+                }
+                onLog({
+                  weight: ex.step > 0 ? weight : 0,
+                  sets: setsDone.length,
+                  reps: Math.round(
                     setsDone.reduce((a, r) => a + r, 0) / setsDone.length,
-                  )
-                : reps,
-              setReps: marked ? setsDone : null,
-              pain,
-              effort,
-              notes: notes.trim(),
-            })
-          }}
-        >
-          <Check strokeWidth={3} />
-          {today.length ? 'Записать ещё раз' : 'Сделано'}
-          {setsDone.length > 0 &&
-            ` · ${setsDone.length} из ${Math.max(sets, setsDone.length)}`}
-          <HapticOverlay />
-        </Button>
+                  ),
+                  setReps: setsDone,
+                  pain,
+                  effort,
+                  notes: notes.trim(),
+                })
+                setAgain(false)
+              }}
+            >
+              <Check strokeWidth={3} />
+              {allSetsDone
+                ? 'Сделано'
+                : `Подход ${setsDone.length + 1} из ${sets} сделан`}
+              <HapticOverlay />
+            </Button>
+          </>
+        )}
       </section>
     </div>
   )
