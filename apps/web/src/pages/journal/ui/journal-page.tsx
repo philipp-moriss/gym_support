@@ -1,3 +1,4 @@
+import { useActivities } from '@/entities/activity'
 import { useEntries } from '@/entities/entry'
 import { useProgram } from '@/entities/program'
 import { useScopedRoutes } from '@/shared/config'
@@ -7,18 +8,30 @@ import { JournalList } from '@/widgets/journal-list'
 export function JournalPage() {
   const program = useProgram()
   const journal = useEntries()
+  const activities = useActivities()
   const { clientId, journalBack } = useScopedRoutes()
-  if ((program.isError && !program.data) || (journal.isError && !journal.data))
+  if (
+    (program.isError && !program.data) ||
+    (journal.isError && !journal.data) ||
+    (activities.isError && !activities.data)
+  )
     return (
       <PageState
         error
-        onRetry={() => void Promise.all([program.refetch(), journal.refetch()])}
+        onRetry={() =>
+          void Promise.all([
+            program.refetch(),
+            journal.refetch(),
+            activities.refetch(),
+          ])
+        }
       />
     )
-  if (!program.data || !journal.data) return <PageState />
+  if (!program.data || !journal.data || !activities.data) return <PageState />
   return (
     <JournalList
       entries={journal.entries}
+      activities={activities.data}
       exercises={program.data.exercises}
       back={journalBack}
       readOnly={!!clientId}
