@@ -6,6 +6,7 @@ import { CoachChangesCard } from '@/features/ack-changes'
 import { ImportXlsx } from '@/features/import-xlsx'
 import { LegacyImportCard } from '@/features/import-legacy'
 import { InstallCard } from '@/features/install-app'
+import { TodayActivities } from '@/features/log-activity'
 import { PageState } from '@/shared/ui'
 import { Workout } from '@/widgets/workout'
 
@@ -35,26 +36,29 @@ export function TodayPage() {
   if (!program.data || !journal.data || !drafts.data) return <PageState />
 
   return (
-    <Workout
-      program={program.data}
-      entries={journal.entries}
-      banner={
-        me && (
-          <>
-            <CoachChangesCard />
-            <InstallCard dismissible />
-            <LegacyImportCard
-              userId={me.id}
-              excelSlot={
-                <ImportXlsx
-                  exercises={program.data.exercises}
-                  buttonVariant="outline"
-                />
-              }
-            />
-          </>
-        )
-      }
-    />
+    <div className="flex flex-col gap-6">
+      <Workout
+        program={program.data}
+        entries={journal.entries}
+        banner={
+          me && (
+            <>
+              <CoachChangesCard />
+              <InstallCard dismissible />
+              <LegacyImportCard
+                userId={me.id}
+                excelSlot={
+                  <ImportXlsx
+                    exercises={program.data.exercises}
+                    buttonVariant="outline"
+                  />
+                }
+              />
+            </>
+          )
+        }
+      />
+      <TodayActivities />
+    </div>
   )
 }
