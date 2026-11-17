@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { JOURNAL } from '../shared';
 import { JournalController } from './controllers/journal.controller';
+import { Activity } from './entities/activity.entity';
 import { Drafts } from './entities/drafts.entity';
 import { Entry } from './entities/entry.entity';
 import { DraftsService } from './services/drafts.service';
@@ -9,7 +10,7 @@ import { EntriesService } from './services/entries.service';
 
 /** Дневник: записи тренировок, импорт и черновики правок. */
 @Module({
-  imports: [TypeOrmModule.forFeature([Entry, Drafts])],
+  imports: [TypeOrmModule.forFeature([Entry, Drafts, Activity])],
   controllers: [JournalController],
   providers: [
     EntriesService,
