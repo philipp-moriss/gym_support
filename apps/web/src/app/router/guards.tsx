@@ -7,6 +7,7 @@ import {
   useNavigate,
   useParams,
 } from 'react-router'
+import { activitiesKey } from '@/entities/activity'
 import { entriesKey, pendingEntries } from '@/entities/entry'
 import { programKey } from '@/entities/program'
 import { useMe } from '@/entities/session'
@@ -69,6 +70,7 @@ export function CoachClientScope() {
     const drop = () => {
       queryClient.removeQueries({ queryKey: programKey })
       queryClient.removeQueries({ queryKey: entriesKey })
+      queryClient.removeQueries({ queryKey: activitiesKey })
     }
     drop()
     actingAs.set(clientId)
