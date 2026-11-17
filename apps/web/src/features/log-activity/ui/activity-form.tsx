@@ -88,14 +88,16 @@ export function ActivityForm({
               value={f.poolLength}
               min={10}
               decimals={false}
-              onChange={(poolLength) => set({ poolLength })}
+              onChange={(poolLength) =>
+                set({ poolLength: Math.min(poolLength, 100) })
+              }
             />
             <Stepper
               label="Сколько раз"
               value={f.laps}
               min={1}
               decimals={false}
-              onChange={(laps) => set({ laps })}
+              onChange={(laps) => set({ laps: Math.min(laps, 1000) })}
             />
             <Stepper
               label="Минуты"
@@ -119,7 +121,7 @@ export function ActivityForm({
             unit="км"
             value={f.km}
             step={1}
-            onChange={(km) => set({ km })}
+            onChange={(km) => set({ km: Math.min(km, 500) })}
           />
           <div />
           <Stepper

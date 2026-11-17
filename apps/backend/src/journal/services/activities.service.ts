@@ -96,7 +96,7 @@ export class ActivitiesService {
         ...distance,
         date: dto.date ?? cur.date,
         durationSec: dto.durationSec ?? cur.durationSec,
-        notes: dto.notes !== undefined ? dto.notes.trim() : cur.notes,
+        notes: dto.notes != null ? dto.notes.trim() : cur.notes,
       }),
     );
   }

@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { activitiesKey } from '@/entities/activity'
 import { draftsKey, entriesKey } from '@/entities/entry'
 import { programKey } from '@/entities/program'
 import { api } from '@/shared/api'
@@ -23,7 +24,7 @@ export function useGoToWeek() {
   })
 }
 
-/** Полный сброс: записи, черновики и цикл. Упражнения и расписание остаются. */
+/** Полный сброс: записи, доп. тренировки, черновики и цикл. Упражнения и расписание остаются. */
 export function useResetAll() {
   const queryClient = useQueryClient()
   return useMutation({
@@ -37,7 +38,7 @@ export function useResetAll() {
     },
     onSettled: () =>
       Promise.all(
-        [entriesKey, draftsKey, programKey].map((queryKey) =>
+        [entriesKey, activitiesKey, draftsKey, programKey].map((queryKey) =>
           queryClient.invalidateQueries({ queryKey }),
         ),
       ),

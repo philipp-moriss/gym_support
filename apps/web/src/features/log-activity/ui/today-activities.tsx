@@ -8,7 +8,7 @@ import { ActivityForm } from './activity-form'
 
 /** «Сегодня»: бассейн и велик за день — дополнение к залу, не часть программы. */
 export function TodayActivities() {
-  const { data } = useActivities()
+  const { data, isError, refetch } = useActivities()
   const remove = useDeleteActivity().mutate
   const [editing, setEditing] = useState<string | 'new' | null>(null)
   const today = todayIso()
@@ -22,6 +22,15 @@ export function TodayActivities() {
           бассейн, велик
         </span>
       </div>
+
+      {isError && !data && (
+        <div className="flex items-center gap-3 text-sm text-stage-muted">
+          Не удалось загрузить доп. тренировки.
+          <Button variant="ghost" size="sm" onClick={() => void refetch()}>
+            Повторить
+          </Button>
+        </div>
+      )}
 
       {items.map((a) => (
         <Card key={a.id} className="gap-3">

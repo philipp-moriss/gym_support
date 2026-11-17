@@ -87,7 +87,7 @@ export function ResetCard({
       <div className="border-t border-border pt-4">
         {pending?.kind === 'all' ? (
           <Confirm
-            text={`Удалить все записи (${entries.length}) и черновики, начать цикл с этой недели? Упражнения и расписание останутся. Это не отменить — лучше сначала выгрузить Excel.`}
+            text={`Удалить все записи (${entries.length}), доп. тренировки и черновики, начать цикл с этой недели? Упражнения и расписание останутся. Это не отменить — лучше сначала выгрузить Excel.`}
             danger
             onCancel={() => setPending(null)}
           >

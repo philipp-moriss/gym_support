@@ -15,8 +15,7 @@ export function useCreateActivity() {
       api.post<Activity>('/journal/activities', input),
     onMutate: async (input) => {
       await queryClient.cancelQueries({ queryKey: activitiesKey })
-      const prev = queryClient.getQueryData<Activity[]>(activitiesKey)
-      const tempId = `temp-${Date.now()}`
+      const tempId = `temp-${crypto.randomUUID()}`
       const temp: Activity = {
         id: tempId,
         createdAt: new Date().toISOString(),
@@ -35,14 +34,17 @@ export function useCreateActivity() {
         temp,
         ...old,
       ])
-      return { prev, tempId }
+      return { tempId }
     },
     onSuccess: (saved, _input, ctx) =>
       queryClient.setQueryData<Activity[]>(activitiesKey, (old = []) =>
         old.map((a) => (a.id === ctx?.tempId ? saved : a)),
       ),
+    // Убираем только свою временную запись: правки, сделанные тем временем, не откатываем.
     onError: (_error, _input, ctx) =>
-      queryClient.setQueryData(activitiesKey, ctx?.prev),
+      queryClient.setQueryData<Activity[]>(activitiesKey, (old = []) =>
+        old.filter((a) => a.id !== ctx?.tempId),
+      ),
   })
 }
 
@@ -55,7 +57,14 @@ export function useUpdateActivity() {
       await queryClient.cancelQueries({ queryKey: activitiesKey })
       const prev = queryClient.getQueryData<Activity[]>(activitiesKey)
       queryClient.setQueryData<Activity[]>(activitiesKey, (old = []) =>
-        old.map((a) => (a.id === id ? { ...a, ...patch } : a)),
+        old.map((a) => {
+          if (a.id !== id) return a
+          const next = { ...a, ...patch }
+          // Пока сервер не ответил, дистанцию бассейна считаем сами.
+          return next.kind === 'swim'
+            ? { ...next, distanceM: (next.poolLength ?? 0) * (next.laps ?? 0) }
+            : next
+        }),
       )
       return { prev }
     },

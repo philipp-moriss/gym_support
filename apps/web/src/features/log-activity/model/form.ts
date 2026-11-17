@@ -1,8 +1,4 @@
-import type {
-  Activity,
-  ActivityInput,
-  ActivityKind,
-} from '@/entities/activity'
+import type { Activity, ActivityInput, ActivityKind } from '@/entities/activity'
 
 /** Поля формы. Бассейн: дорожка, круги, мин и сек. Велик: км, ч и мин. */
 export interface ActivityFormState {
@@ -28,13 +24,15 @@ export const emptyForm = (kind: ActivityKind): ActivityFormState => ({
 })
 
 export function formFromActivity(a: Activity): ActivityFormState {
+  // У бассейна в форме нет часов: всё время — в минутах (75 мин, а не 1 ч 15 мин).
+  const hours = a.kind === 'bike' ? Math.floor(a.durationSec / 3600) : 0
   return {
     kind: a.kind,
     poolLength: a.poolLength ?? 25,
     laps: a.laps ?? 20,
     km: a.distanceM / 1000,
-    hours: Math.floor(a.durationSec / 3600),
-    minutes: Math.floor((a.durationSec % 3600) / 60),
+    hours,
+    minutes: Math.floor((a.durationSec - hours * 3600) / 60),
     seconds: a.durationSec % 60,
     notes: a.notes,
   }
