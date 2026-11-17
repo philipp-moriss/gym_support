@@ -13,11 +13,14 @@ import {
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { CoachAccess, CurrentUser, type AuthUser } from '../../shared';
 import {
+  CreateActivityDto,
   CreateEntryDto,
   DraftsDto,
   ImportEntriesDto,
+  UpdateActivityDto,
   UpdateEntryDto,
 } from '../dto/journal.dto';
+import { ActivitiesService } from '../services/activities.service';
 import { DraftsService } from '../services/drafts.service';
 import { EntriesService } from '../services/entries.service';
 
@@ -28,6 +31,7 @@ export class JournalController {
   constructor(
     private entries: EntriesService,
     private drafts: DraftsService,
+    private activities: ActivitiesService,
   ) {}
 
   /** Все записи, новые сверху. Тренер может читать дневник своего клиента. */
@@ -68,11 +72,12 @@ export class JournalController {
     return this.entries.remove(user.id, id);
   }
 
-  /** Полный сброс дневника: записи и черновики. */
+  /** Полный сброс дневника: записи, кардио и черновики. */
   @Delete()
   @HttpCode(204)
   async clear(@CurrentUser() user: AuthUser) {
     await this.entries.removeAll(user.id);
+    await this.activities.removeAll(user.id);
     await this.drafts.clear(user.id);
   }
 
@@ -84,5 +89,38 @@ export class JournalController {
   @Put('drafts')
   putDrafts(@CurrentUser() user: AuthUser, @Body() dto: DraftsDto) {
     return this.drafts.put(user.id, dto.date, dto.items);
+  }
+
+  /** Доп. тренировки (бассейн, велик), новые сверху. Тренер может читать. */
+  @CoachAccess('read')
+  @Get('activities')
+  listActivities(@CurrentUser() user: AuthUser) {
+    return this.activities.list(user.id);
+  }
+
+  @Post('activities')
+  createActivity(
+    @CurrentUser() user: AuthUser,
+    @Body() dto: CreateActivityDto,
+  ) {
+    return this.activities.create(user.id, dto);
+  }
+
+  @Patch('activities/:id')
+  updateActivity(
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateActivityDto,
+  ) {
+    return this.activities.update(user.id, id, dto);
+  }
+
+  @Delete('activities/:id')
+  @HttpCode(204)
+  removeActivity(
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.activities.remove(user.id, id);
   }
 }

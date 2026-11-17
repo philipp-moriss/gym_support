@@ -1,8 +1,14 @@
-import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
+import {
+  ApiProperty,
+  ApiPropertyOptional,
+  OmitType,
+  PartialType,
+} from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
   ArrayMaxSize,
   IsArray,
+  IsIn,
   IsInt,
   IsNumber,
   IsObject,
@@ -16,6 +22,7 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { ISO_DATE } from '../../shared';
+import { ACTIVITY_KINDS, type ActivityKind } from '../entities/activity.entity';
 
 export class CreateEntryDto {
   @ApiProperty({ example: '2026-10-12' }) @Matches(ISO_DATE) date: string;
@@ -66,3 +73,49 @@ export class DraftsDto {
   @IsObject()
   items: Record<string, unknown>;
 }
+
+export class CreateActivityDto {
+  @ApiProperty({ example: '2026-11-17' }) @Matches(ISO_DATE) date: string;
+
+  @ApiProperty({ enum: ACTIVITY_KINDS })
+  @IsIn(ACTIVITY_KINDS)
+  kind: ActivityKind;
+
+  @ApiPropertyOptional({ description: 'Бассейн: длина дорожки, м' })
+  @IsOptional()
+  @IsInt()
+  @Min(10)
+  @Max(100)
+  poolLength?: number;
+
+  @ApiPropertyOptional({ description: 'Бассейн: сколько раз проплыл дорожку' })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(1000)
+  laps?: number;
+
+  @ApiPropertyOptional({ description: 'Велосипед: дистанция, м' })
+  @IsOptional()
+  @IsInt()
+  @Min(100)
+  @Max(500_000)
+  distanceM?: number;
+
+  @ApiProperty({ description: 'Время, с' })
+  @IsInt()
+  @Min(1)
+  @Max(86_400)
+  durationSec: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(2000)
+  notes?: string;
+}
+
+/** Вид не меняется: `kind` в правке отбрасывается (whitelist). */
+export class UpdateActivityDto extends PartialType(
+  OmitType(CreateActivityDto, ['kind'] as const),
+) {}

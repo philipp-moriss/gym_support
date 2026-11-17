@@ -5,6 +5,7 @@ import { JournalController } from './controllers/journal.controller';
 import { Activity } from './entities/activity.entity';
 import { Drafts } from './entities/drafts.entity';
 import { Entry } from './entities/entry.entity';
+import { ActivitiesService } from './services/activities.service';
 import { DraftsService } from './services/drafts.service';
 import { EntriesService } from './services/entries.service';
 
@@ -15,6 +16,7 @@ import { EntriesService } from './services/entries.service';
   providers: [
     EntriesService,
     DraftsService,
+    ActivitiesService,
     { provide: JOURNAL, useExisting: EntriesService },
   ],
   exports: [JOURNAL],
