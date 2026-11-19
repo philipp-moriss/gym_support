@@ -17,11 +17,21 @@ export interface DistanceFields {
 /**
  * Поля дистанции по виду. Бассейн: дорожка × сколько раз, дистанцию считаем сами.
  * Велик: дистанция как есть, полей бассейна быть не должно.
+ * Пилатес: только время, дистанции нет.
  */
 export function activityDistance(
   kind: ActivityKind,
   f: DistanceFields,
-): { poolLength: number | null; laps: number | null; distanceM: number } {
+): {
+  poolLength: number | null;
+  laps: number | null;
+  distanceM: number | null;
+} {
+  if (kind === 'pilates') {
+    if (f.poolLength != null || f.laps != null || f.distanceM != null)
+      throw new BadRequestException('У пилатеса нет дистанции, только время');
+    return { poolLength: null, laps: null, distanceM: null };
+  }
   if (kind === 'swim') {
     if (f.distanceM != null)
       throw new BadRequestException(
@@ -87,6 +97,7 @@ export class ActivitiesService {
         : {
             poolLength: dto.poolLength,
             laps: dto.laps,
+            // У пилатеса cur.distanceM — null, так что и тут остаётся null.
             distanceM: dto.distanceM ?? cur.distanceM,
           },
     );

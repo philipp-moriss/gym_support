@@ -1,10 +1,10 @@
 import { Column, Entity, ForeignKey, Index } from 'typeorm';
 import { BaseEntity } from '../../shared';
 
-export const ACTIVITY_KINDS = ['swim', 'bike'] as const;
+export const ACTIVITY_KINDS = ['swim', 'bike', 'pilates'] as const;
 export type ActivityKind = (typeof ACTIVITY_KINDS)[number];
 
-/** Доп. тренировка: бассейн или велосипед. С программой и прогрессией не связана. */
+/** Доп. тренировка: бассейн, велосипед или пилатес. С программой и прогрессией не связана. */
 @Entity('activities')
 @Index(['userId', 'date'])
 export class Activity extends BaseEntity {
@@ -30,9 +30,9 @@ export class Activity extends BaseEntity {
   @Column({ type: 'int', nullable: true })
   laps: number | null;
 
-  /** Дистанция, м. У бассейна всегда poolLength × laps. */
-  @Column({ type: 'int' })
-  distanceM: number;
+  /** Дистанция, м. У бассейна всегда poolLength × laps; у пилатеса — null. */
+  @Column({ type: 'int', nullable: true })
+  distanceM: number | null;
 
   @Column({ type: 'int' })
   durationSec: number;

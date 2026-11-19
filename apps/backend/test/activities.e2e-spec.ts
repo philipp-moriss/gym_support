@@ -149,6 +149,49 @@ describe('activities (e2e)', () => {
     expect(empty.body).toEqual([]);
   });
 
+  it('pilates is time only', async () => {
+    const auth = await client();
+    const pilates = await http()
+      .post('/api/journal/activities')
+      .set(auth)
+      .send({ date: '2026-11-19', kind: 'pilates', durationSec: 2700 })
+      .expect(201);
+    expect(pilates.body).toMatchObject({
+      kind: 'pilates',
+      poolLength: null,
+      laps: null,
+      distanceM: null,
+      durationSec: 2700,
+    });
+
+    await http()
+      .post('/api/journal/activities')
+      .set(auth)
+      .send({
+        date: '2026-11-19',
+        kind: 'pilates',
+        distanceM: 1000,
+        durationSec: 60,
+      })
+      .expect(400);
+    await http()
+      .patch(`/api/journal/activities/${pilates.body.id}`)
+      .set(auth)
+      .send({ laps: 3 })
+      .expect(400);
+
+    const edited = await http()
+      .patch(`/api/journal/activities/${pilates.body.id}`)
+      .set(auth)
+      .send({ durationSec: 3600, notes: 'реформер' })
+      .expect(200);
+    expect(edited.body).toMatchObject({
+      distanceM: null,
+      durationSec: 3600,
+      notes: 'реформер',
+    });
+  });
+
   it('coach reads client activities but cannot change them', async () => {
     const admin = await http()
       .post('/api/admin/auth/login')

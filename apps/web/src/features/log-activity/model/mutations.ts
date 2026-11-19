@@ -26,7 +26,7 @@ export function useCreateActivity() {
         distanceM:
           input.kind === 'swim'
             ? (input.poolLength ?? 0) * (input.laps ?? 0)
-            : (input.distanceM ?? 0),
+            : (input.distanceM ?? null),
         durationSec: input.durationSec,
         notes: input.notes ?? '',
       }

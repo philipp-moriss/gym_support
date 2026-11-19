@@ -46,4 +46,18 @@ describe('activityDistance', () => {
       }),
     ).toEqual({ poolLength: null, laps: null, distanceM: 5000 });
   });
+
+  it('pilates: time only, no distance fields', () => {
+    expect(activityDistance('pilates', {})).toEqual({
+      poolLength: null,
+      laps: null,
+      distanceM: null,
+    });
+    expect(() => activityDistance('pilates', { distanceM: 1000 })).toThrow(
+      BadRequestException,
+    );
+    expect(() =>
+      activityDistance('pilates', { poolLength: 25, laps: 4 }),
+    ).toThrow(BadRequestException);
+  });
 });

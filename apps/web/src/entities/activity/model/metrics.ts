@@ -25,25 +25,34 @@ export function formatDuration(sec: number) {
   return h ? `${h}:${pad(m)}:${pad(r)}` : `${m}:${pad(r)}`
 }
 
-/** Бассейн — в метрах («1 000 м»), велик — в км («32,4 км»). */
-export const formatDistance = (kind: Activity['kind'], m: number) =>
-  kind === 'swim' ? `${num(m)} м` : `${oneDecimal(m / 1000)} км`
+type Measured = Pick<
+  Activity,
+  'kind' | 'poolLength' | 'laps' | 'distanceM' | 'durationSec'
+>
 
-/** Короткая сводка: дистанция, круги, время, темп или скорость. */
-export function activityStats(
-  a: Pick<Activity, 'kind' | 'poolLength' | 'laps' | 'distanceM' | 'durationSec'>,
-) {
+/**
+ * Главная цифра карточки. Бассейн — метры («1 000 м»), велик — км
+ * («32,4 км»), пилатес — минуты («45 мин»).
+ */
+export function activityHeadline(a: Measured): { value: string; unit: string } {
+  if (a.kind === 'swim') return { value: num(a.distanceM ?? 0), unit: 'м' }
+  if (a.kind === 'bike')
+    return { value: oneDecimal((a.distanceM ?? 0) / 1000), unit: 'км' }
+  return { value: num(Math.round(a.durationSec / 60)), unit: 'мин' }
+}
+
+/** Мелкие цифры под главной: круги, время, темп или скорость. */
+export function activityDetails(a: Measured): string[] {
   const time = formatDuration(a.durationSec)
+  const m = a.distanceM ?? 0
   if (a.kind === 'swim')
     return [
-      formatDistance('swim', a.distanceM),
       `${a.laps}×${a.poolLength} м`,
       time,
-      `${formatDuration(pacePer100m(a.distanceM, a.durationSec))}/100 м`,
+      `${formatDuration(pacePer100m(m, a.durationSec))}/100 м`,
     ]
-  return [
-    formatDistance('bike', a.distanceM),
-    time,
-    `${oneDecimal(speedKmh(a.distanceM, a.durationSec))} км/ч`,
-  ]
+  if (a.kind === 'bike')
+    return [time, `${oneDecimal(speedKmh(m, a.durationSec))} км/ч`]
+  // Пилатес: время уже в заголовке; секунды покажем, только если они есть.
+  return a.durationSec % 60 ? [time] : []
 }
